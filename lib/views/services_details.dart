@@ -1,19 +1,24 @@
-// services_details.dart (refactorizado y optimizado con traducciones)
+// services_details.dart (corregido)
 import 'package:flutter/material.dart';
 import 'package:car_service_app/utils/index.dart';
 import 'package:car_service_app/services/app_localizations.dart';
 
 class Servicesdetails extends StatelessWidget {
   final Map<String, dynamic> serviceDetails;
-  final Widget? bottomNavigationBar;
+  final VoidCallback onNavigateToServices;
+  final VoidCallback onNavigateToHistory;
+  final VoidCallback onNavigateToSettings;
 
   const Servicesdetails({
     super.key,
     required this.serviceDetails,
-    this.bottomNavigationBar,
+    required this.onNavigateToServices,
+    required this.onNavigateToHistory,
+    required this.onNavigateToSettings,
   });
 
-  // Constantes (consistentes con dashboard.dart)
+  // Constants
+  static const _primaryColor = Color(0xFF2AEFDA);
   static const _secondaryColor = Color(0xFF75A6B1);
   static const _textColor = Colors.white;
 
@@ -202,8 +207,8 @@ class Servicesdetails extends StatelessWidget {
             defaultValue: localizations.serviceDetails,
           ),
           style: const TextStyle(
-            color: Colors.white, // Título en blanco
-            fontSize: 24, // Tamaño consistente con otras pantallas
+            color: Colors.white,
+            fontSize: 24,
             fontWeight: FontWeight.bold,
           ),
         ),
@@ -233,7 +238,68 @@ class Servicesdetails extends StatelessWidget {
           ],
         ),
       ),
-      bottomNavigationBar: bottomNavigationBar,
+      bottomNavigationBar: _buildBottomNavigationBar(context),
     );
+  }
+
+  // ============ NAVIGATION ============
+  // ============ NAVIGATION ============
+  Widget _buildBottomNavigationBar(BuildContext context) {
+    return BottomNavigationBar(
+      type: BottomNavigationBarType.fixed,
+      backgroundColor: const Color(0xFF10162A),
+      selectedItemColor: _primaryColor,
+      unselectedItemColor: Colors.white54,
+      showUnselectedLabels: true,
+      currentIndex: 0,
+      onTap: (index) {
+        _handleNavigation(context, index);
+      },
+      items: [
+        BottomNavigationBarItem(
+          icon: Icon(Icons.home_outlined),
+          label: AppLocalizations.of(context).home,
+        ),
+        BottomNavigationBarItem(
+          icon: Icon(Icons.add_outlined),
+          label: AppLocalizations.of(context).services,
+        ),
+        BottomNavigationBarItem(
+          icon: Icon(Icons.history_outlined),
+          label: AppLocalizations.of(context).history,
+        ),
+        BottomNavigationBarItem(
+          icon: Icon(Icons.settings_outlined),
+          label: AppLocalizations.of(context).settings,
+        ),
+      ],
+    );
+  }
+
+  void _handleNavigation(BuildContext context, int index) {
+    if (index == 0) {
+      Navigator.pop(context);
+      return;
+    }
+
+    // Ejecutar navegación primero
+    switch (index) {
+      case 1:
+        onNavigateToServices();
+        break;
+      case 2:
+        onNavigateToHistory();
+        break;
+      case 3:
+        onNavigateToSettings();
+        break;
+    }
+
+    // Luego cerrar después de un microtask, verificando mounted
+    Future.microtask(() {
+      if (context.mounted) {
+        Navigator.pop(context);
+      }
+    });
   }
 }

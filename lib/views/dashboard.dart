@@ -401,7 +401,9 @@ class _DashboardViewState extends State<DashboardView> {
             MaterialPageRoute(
               builder: (context) => Servicesdetails(
                 serviceDetails: service,
-                bottomNavigationBar: _buildBottomNavigationBar(context),
+                onNavigateToServices: widget.onNavigateToServices,
+                onNavigateToHistory: widget.onNavigateToHistory,
+                onNavigateToSettings: widget.onNavigateToSettings,
               ),
             ),
           );
@@ -509,7 +511,7 @@ class _DashboardViewState extends State<DashboardView> {
             ),
             TextButton(
               onPressed: () {
-                // TODO: Navigate to full history
+                widget.onNavigateToHistory();
               },
               child: Text(
                 AppLocalizations.of(context).viewAll,
@@ -798,39 +800,6 @@ class _DashboardViewState extends State<DashboardView> {
           ),
         ],
       ),
-    );
-  }
-
-  // ============ NAVIGATION ============
-  Widget _buildBottomNavigationBar(BuildContext context) {
-    return BottomNavigationBar(
-      type: BottomNavigationBarType.fixed,
-      backgroundColor: const Color(0xFF10162A),
-      selectedItemColor: _primaryColor,
-      unselectedItemColor: Colors.white54,
-      showUnselectedLabels: true,
-      currentIndex: 0,
-      onTap: (index) {
-        if (index != 0) Navigator.pop(context);
-      },
-      items: [
-        BottomNavigationBarItem(
-          icon: Icon(Icons.home_outlined),
-          label: AppLocalizations.of(context).home,
-        ),
-        BottomNavigationBarItem(
-          icon: Icon(Icons.add_outlined),
-          label: AppLocalizations.of(context).services,
-        ),
-        BottomNavigationBarItem(
-          icon: Icon(Icons.history_outlined),
-          label: AppLocalizations.of(context).history,
-        ),
-        BottomNavigationBarItem(
-          icon: Icon(Icons.settings_outlined),
-          label: AppLocalizations.of(context).settings,
-        ),
-      ],
     );
   }
 }
