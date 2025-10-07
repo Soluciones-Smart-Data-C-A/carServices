@@ -243,7 +243,6 @@ class Servicesdetails extends StatelessWidget {
   }
 
   // ============ NAVIGATION ============
-  // ============ NAVIGATION ============
   Widget _buildBottomNavigationBar(BuildContext context) {
     return BottomNavigationBar(
       type: BottomNavigationBarType.fixed,
