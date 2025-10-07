@@ -121,6 +121,12 @@ class AppLocalizations {
 
   String get loadingVehicles => _getString('loading_vehicles');
   String get viewAll => _getString('view_all');
+  String get serviceInformation => _getString('service_information');
+  String get nextService => _getString('next_service');
+  String get remaining => _getString('remaining');
+  String get status => _getString('status');
+  String get pending => _getString('pending');
+  String get dueSoon => _getString('due_soon');
 }
 
 class _AppLocalizationsDelegate

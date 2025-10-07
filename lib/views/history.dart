@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:car_service_app/main.dart';
 import 'package:car_service_app/utils/icon_helper.dart';
 import 'package:car_service_app/services/database_service.dart';
+import 'package:car_service_app/services/app_localizations.dart';
 
 class HistoryView extends StatefulWidget {
   const HistoryView({super.key});
@@ -38,8 +39,12 @@ class HistoryViewState extends State<HistoryView> {
     return '${date.day.toString().padLeft(2, '0')}/${date.month.toString().padLeft(2, '0')}/${date.year}';
   }
 
-  Widget _buildServiceRecordCard(Map<String, dynamic> record) {
-    final serviceName = record['serviceName'] as String? ?? 'Service';
+  Widget _buildServiceRecordCard(
+    Map<String, dynamic> record,
+    AppLocalizations localizations,
+  ) {
+    final serviceName =
+        record['serviceName'] as String? ?? localizations.service;
     final vehicleMake = record['vehicleMake'] as String? ?? '';
     final vehicleModel = record['vehicleModel'] as String? ?? '';
     final mileage = record['mileage'] as int? ?? 0;
@@ -99,7 +104,10 @@ class HistoryViewState extends State<HistoryView> {
                 children: [
                   const Icon(Icons.speed, size: 16, color: _grey400),
                   const SizedBox(width: 4),
-                  Text('$mileage km', style: const TextStyle(color: _grey300)),
+                  Text(
+                    '$mileage ${localizations.km}',
+                    style: const TextStyle(color: _grey300),
+                  ),
                 ],
               ),
               const SizedBox(height: 4),
@@ -121,9 +129,9 @@ class HistoryViewState extends State<HistoryView> {
                     children: [
                       const Divider(color: _grey600, height: 1),
                       const SizedBox(height: 8),
-                      const Text(
-                        'Notes:',
-                        style: TextStyle(
+                      Text(
+                        '${localizations.notes}:',
+                        style: const TextStyle(
                           fontWeight: FontWeight.bold,
                           color: _grey300,
                           fontSize: 12,
@@ -149,53 +157,77 @@ class HistoryViewState extends State<HistoryView> {
           size: 16,
         ),
         onTap: () {
-          _showServiceDetails(record);
+          _showServiceDetails(record, localizations);
         },
       ),
     );
   }
 
-  void _showServiceDetails(Map<String, dynamic> record) {
+  void _showServiceDetails(
+    Map<String, dynamic> record,
+    AppLocalizations localizations,
+  ) {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
         backgroundColor: Colors.grey[900],
-        title: const Text(
-          'Service Details',
-          style: TextStyle(color: _textColor),
+        title: Text(
+          localizations.serviceDetails,
+          style: const TextStyle(color: _textColor),
         ),
         content: SingleChildScrollView(
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             mainAxisSize: MainAxisSize.min,
             children: [
-              _buildDetailItem('Service', record['serviceName'] as String),
               _buildDetailItem(
-                'Vehicle',
-                '${record['vehicleMake']} ${record['vehicleModel']}',
+                localizations.service,
+                record['serviceName'] as String,
+                localizations,
               ),
-              _buildDetailItem('Mileage', '${record['mileage']} km'),
               _buildDetailItem(
-                'Date',
+                localizations.vehicle,
+                '${record['vehicleMake']} ${record['vehicleModel']}',
+                localizations,
+              ),
+              _buildDetailItem(
+                localizations.mileage,
+                '${record['mileage']} ${localizations.km}',
+                localizations,
+              ),
+              _buildDetailItem(
+                localizations.date,
                 _formatDate(DateTime.parse(record['date'] as String)),
+                localizations,
               ),
               if (record['notes'] != null &&
                   (record['notes'] as String).isNotEmpty)
-                _buildDetailItem('Notes', record['notes'] as String),
+                _buildDetailItem(
+                  localizations.notes,
+                  record['notes'] as String,
+                  localizations,
+                ),
             ],
           ),
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: const Text('Close', style: TextStyle(color: _primaryColor)),
+            child: Text(
+              localizations.close,
+              style: const TextStyle(color: _primaryColor),
+            ),
           ),
         ],
       ),
     );
   }
 
-  Widget _buildDetailItem(String label, String value) {
+  Widget _buildDetailItem(
+    String label,
+    String value,
+    AppLocalizations localizations,
+  ) {
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 4.0),
       child: Column(
@@ -224,16 +256,16 @@ class HistoryViewState extends State<HistoryView> {
     );
   }
 
-  Widget _buildErrorWidget(String error) {
+  Widget _buildErrorWidget(String error, AppLocalizations localizations) {
     return Center(
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
           const Icon(Icons.error_outline, color: Colors.red, size: 48),
           const SizedBox(height: 16),
-          const Text(
-            "Error loading history",
-            style: TextStyle(color: _textColor, fontSize: 16),
+          Text(
+            localizations.errorLoadingHistory,
+            style: const TextStyle(color: _textColor, fontSize: 16),
           ),
           const SizedBox(height: 8),
           Text(
@@ -245,32 +277,32 @@ class HistoryViewState extends State<HistoryView> {
           ElevatedButton(
             onPressed: _refreshData,
             style: ElevatedButton.styleFrom(backgroundColor: _primaryColor),
-            child: const Text("Retry"),
+            child: Text(localizations.retry),
           ),
         ],
       ),
     );
   }
 
-  Widget _buildEmptyState() {
+  Widget _buildEmptyState(AppLocalizations localizations) {
     return Center(
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
           const Icon(Icons.history, color: _grey400, size: 64),
           const SizedBox(height: 16),
-          const Text(
-            "No service records",
-            style: TextStyle(
+          Text(
+            localizations.noServiceRecords,
+            style: const TextStyle(
               color: _grey300,
               fontSize: 18,
               fontWeight: FontWeight.bold,
             ),
           ),
           const SizedBox(height: 8),
-          const Text(
-            "Services you add will appear here",
-            style: TextStyle(color: _grey400),
+          Text(
+            localizations.servicesWillAppearHere,
+            style: const TextStyle(color: _grey400),
             textAlign: TextAlign.center,
           ),
         ],
@@ -280,6 +312,8 @@ class HistoryViewState extends State<HistoryView> {
 
   @override
   Widget build(BuildContext context) {
+    final localizations = AppLocalizations.of(context);
+
     return Scaffold(
       backgroundColor: Colors.transparent,
       appBar: AppBar(
@@ -295,9 +329,9 @@ class HistoryViewState extends State<HistoryView> {
             );
           },
         ),
-        title: const Text(
-          "Service History",
-          style: TextStyle(
+        title: Text(
+          localizations.serviceHistory,
+          style: const TextStyle(
             color: _textColor,
             fontSize: 24,
             fontWeight: FontWeight.bold,
@@ -311,9 +345,9 @@ class HistoryViewState extends State<HistoryView> {
           if (snapshot.connectionState == ConnectionState.waiting) {
             return _buildLoadingIndicator();
           } else if (snapshot.hasError) {
-            return _buildErrorWidget(snapshot.error.toString());
+            return _buildErrorWidget(snapshot.error.toString(), localizations);
           } else if (!snapshot.hasData || snapshot.data!.isEmpty) {
-            return _buildEmptyState();
+            return _buildEmptyState(localizations);
           }
 
           final records = snapshot.data!;
@@ -338,7 +372,10 @@ class HistoryViewState extends State<HistoryView> {
               padding: const EdgeInsets.all(16),
               itemCount: sortedRecords.length,
               itemBuilder: (context, index) {
-                return _buildServiceRecordCard(sortedRecords[index]);
+                return _buildServiceRecordCard(
+                  sortedRecords[index],
+                  localizations,
+                );
               },
             ),
           );

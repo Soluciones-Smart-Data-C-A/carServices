@@ -1,4 +1,4 @@
-// services.dart (with automatic mileage feature)
+// services.dart (with automatic mileage feature and translations)
 import 'package:flutter/material.dart';
 import 'package:logger/logger.dart';
 import 'package:car_service_app/main.dart';
@@ -7,6 +7,7 @@ import 'package:car_service_app/models/service_record.dart';
 import 'package:car_service_app/models/service.dart';
 import 'package:car_service_app/services/database_service.dart';
 import 'package:car_service_app/services/location_service.dart';
+import 'package:car_service_app/services/app_localizations.dart';
 
 class ServicesView extends StatefulWidget {
   const ServicesView({super.key});
@@ -109,17 +110,14 @@ class ServicesViewState extends State<ServicesView> {
     );
   }
 
-  void _useAutoMileage() async {
+  void _useAutoMileage(AppLocalizations localizations) async {
     if (!_isLocationEnabled) {
-      _showSnackBar(
-        "Location tracking is not enabled. Please enable location services in settings.",
-        isError: true,
-      );
+      _showSnackBar(localizations.autoMileageUnavailable, isError: true);
       return;
     }
 
     if (_selectedVehicle == null) {
-      _showSnackBar("Please select a vehicle first.", isError: true);
+      _showSnackBar(localizations.selectVehicleFirst, isError: true);
       return;
     }
 
@@ -136,28 +134,28 @@ class ServicesViewState extends State<ServicesView> {
     });
 
     _showSnackBar(
-      "Auto mileage set to $estimatedMileage km (Today: ${currentAutoMileage.toStringAsFixed(1)} km)",
+      localizations.autoMileageSet(
+        estimatedMileage,
+        currentAutoMileage.toStringAsFixed(1),
+      ),
     );
   }
 
-  bool _validateInputs() {
+  bool _validateInputs(AppLocalizations localizations) {
     if (_selectedVehicle == null || _mileageController.text.isEmpty) {
-      _showSnackBar(
-        "Please select a vehicle and enter the mileage.",
-        isError: true,
-      );
+      _showSnackBar(localizations.selectVehicleAndMileage, isError: true);
       return false;
     }
 
     final mileage = int.tryParse(_mileageController.text) ?? 0;
     if (mileage == 0) {
-      _showSnackBar("Please enter a valid mileage.", isError: true);
+      _showSnackBar(localizations.enterValidMileage, isError: true);
       return false;
     }
 
     if (mileage < _selectedVehicle!.currentMileage) {
       _showSnackBar(
-        "Mileage cannot be less than current vehicle mileage (${_selectedVehicle!.currentMileage} km).",
+        localizations.mileageCannotBeLess(_selectedVehicle!.currentMileage),
         isError: true,
       );
       return false;
@@ -171,7 +169,7 @@ class ServicesViewState extends State<ServicesView> {
           .toList();
 
       if (selectedServiceIds.isEmpty) {
-        _showSnackBar("Please select at least one service.", isError: true);
+        _showSnackBar(localizations.selectAtLeastOneService, isError: true);
         return false;
       }
     }
@@ -179,8 +177,8 @@ class ServicesViewState extends State<ServicesView> {
     return true;
   }
 
-  Future<void> _saveRecord() async {
-    if (!_validateInputs()) return;
+  Future<void> _saveRecord(AppLocalizations localizations) async {
+    if (!_validateInputs(localizations)) return;
 
     final mileage = int.parse(_mileageController.text);
     List<int> selectedServiceIds = [];
@@ -201,10 +199,13 @@ class ServicesViewState extends State<ServicesView> {
 
       await _updateVehicleData(mileage);
 
-      _showSnackBar("Service record saved successfully!");
+      _showSnackBar(localizations.serviceRecordSaved);
       _resetForm();
     } catch (e) {
-      _showSnackBar("Error saving record: $e", isError: true);
+      _showSnackBar(
+        localizations.errorSavingRecord(e.toString()),
+        isError: true,
+      );
     }
   }
 
@@ -429,15 +430,15 @@ class ServicesViewState extends State<ServicesView> {
     );
   }
 
-  Widget _buildMileageInput() {
+  Widget _buildMileageInput(AppLocalizations localizations) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Row(
           children: [
             Text(
-              "Current Mileage *",
-              style: TextStyle(
+              localizations.currentMileage,
+              style: const TextStyle(
                 fontSize: 20,
                 fontWeight: FontWeight.bold,
                 color: Colors.white,
@@ -446,9 +447,9 @@ class ServicesViewState extends State<ServicesView> {
             const Spacer(),
             if (_isLocationEnabled)
               ElevatedButton.icon(
-                onPressed: _useAutoMileage,
+                onPressed: () => _useAutoMileage(localizations),
                 icon: const Icon(Icons.location_on, size: 16),
-                label: const Text("Auto Mileage"),
+                label: Text(localizations.autoMileage),
                 style: ElevatedButton.styleFrom(
                   backgroundColor: _primaryColor,
                   foregroundColor: Colors.white,
@@ -469,8 +470,8 @@ class ServicesViewState extends State<ServicesView> {
           keyboardType: TextInputType.number,
           style: const TextStyle(color: _textColor, fontSize: 16),
           decoration: InputDecoration(
-            hintText: "Enter current mileage",
-            hintStyle: TextStyle(color: Colors.grey[400], fontSize: 14),
+            hintText: localizations.enterCurrentMileage,
+            hintStyle: const TextStyle(color: _grey400, fontSize: 14),
             border: const OutlineInputBorder(
               borderSide: BorderSide(color: _secondaryColor),
             ),
@@ -484,7 +485,7 @@ class ServicesViewState extends State<ServicesView> {
               horizontal: 16,
               vertical: 14,
             ),
-            suffixText: "km",
+            suffixText: localizations.km,
             suffixStyle: const TextStyle(
               color: _primaryColor,
               fontWeight: FontWeight.bold,
@@ -507,7 +508,9 @@ class ServicesViewState extends State<ServicesView> {
                 const SizedBox(width: 8),
                 Expanded(
                   child: Text(
-                    "Today's auto mileage: ${_autoMileage.toStringAsFixed(1)} km",
+                    localizations.todaysAutoMileage(
+                      _autoMileage.toStringAsFixed(1),
+                    ),
                     style: TextStyle(
                       color: _primaryColor,
                       fontSize: 12,
@@ -517,7 +520,9 @@ class ServicesViewState extends State<ServicesView> {
                 ),
                 if (_selectedVehicle != null)
                   Text(
-                    "Total: ${_selectedVehicle!.currentMileage + _autoMileage.round()} km",
+                    localizations.totalMileage(
+                      _selectedVehicle!.currentMileage + _autoMileage.round(),
+                    ),
                     style: const TextStyle(
                       color: _textColor,
                       fontSize: 12,
@@ -533,7 +538,7 @@ class ServicesViewState extends State<ServicesView> {
           GestureDetector(
             onTap: () {
               _showSnackBar(
-                "Enable location services to use automatic mileage tracking.",
+                localizations.enableLocationForAutoMileage,
                 isError: true,
               );
             },
@@ -550,7 +555,7 @@ class ServicesViewState extends State<ServicesView> {
                   const SizedBox(width: 8),
                   Expanded(
                     child: Text(
-                      "Location tracking disabled - Auto mileage unavailable",
+                      localizations.autoMileageUnavailable,
                       style: TextStyle(
                         color: Colors.orange,
                         fontSize: 12,
@@ -567,13 +572,13 @@ class ServicesViewState extends State<ServicesView> {
     );
   }
 
-  Widget _buildServicesSwitch() {
+  Widget _buildServicesSwitch(AppLocalizations localizations) {
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
         Text(
-          "Includes Services?",
-          style: TextStyle(
+          localizations.includesServices,
+          style: const TextStyle(
             fontSize: 18,
             fontWeight: FontWeight.bold,
             color: Colors.white,
@@ -591,14 +596,14 @@ class ServicesViewState extends State<ServicesView> {
               }
             });
           },
-          activeThumbColor: _primaryColor, // ← Cambiado aquí
+          activeThumbColor: _primaryColor,
           inactiveTrackColor: Colors.grey[600],
         ),
       ],
     );
   }
 
-  Widget _buildServicesGrid() {
+  Widget _buildServicesGrid(AppLocalizations localizations) {
     if (!_hasServices) {
       return const SizedBox.shrink(); // Hide section if no services
     }
@@ -607,8 +612,8 @@ class ServicesViewState extends State<ServicesView> {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
-          "Services Performed",
-          style: TextStyle(
+          localizations.servicesPerformed,
+          style: const TextStyle(
             fontSize: 20,
             fontWeight: FontWeight.bold,
             color: Colors.white,
@@ -632,13 +637,13 @@ class ServicesViewState extends State<ServicesView> {
     );
   }
 
-  Widget _buildNotesInput() {
+  Widget _buildNotesInput(AppLocalizations localizations) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
-          "Notes (optional)",
-          style: TextStyle(
+          localizations.notesOptional,
+          style: const TextStyle(
             fontSize: 16,
             fontWeight: FontWeight.bold,
             color: Colors.white,
@@ -650,8 +655,8 @@ class ServicesViewState extends State<ServicesView> {
           maxLines: 3,
           style: const TextStyle(color: _textColor, fontSize: 14),
           decoration: InputDecoration(
-            hintText: "Add additional notes...",
-            hintStyle: TextStyle(color: Colors.grey[400]),
+            hintText: localizations.addAdditionalNotes,
+            hintStyle: const TextStyle(color: _grey400),
             border: const OutlineInputBorder(
               borderSide: BorderSide(color: _secondaryColor),
             ),
@@ -668,14 +673,14 @@ class ServicesViewState extends State<ServicesView> {
     );
   }
 
-  Widget _buildSaveButton() {
+  Widget _buildSaveButton(AppLocalizations localizations) {
     final bool canSave =
         _mileageController.text.isNotEmpty && _selectedVehicle != null;
 
     return SizedBox(
       width: double.infinity,
       child: ElevatedButton(
-        onPressed: canSave ? _saveRecord : null,
+        onPressed: canSave ? () => _saveRecord(localizations) : null,
         style: ElevatedButton.styleFrom(
           backgroundColor: canSave ? _primaryColor : _grey400,
           padding: const EdgeInsets.symmetric(vertical: 16),
@@ -689,8 +694,8 @@ class ServicesViewState extends State<ServicesView> {
             const Icon(Icons.save, size: 20),
             const SizedBox(width: 8),
             Text(
-              "Save Record",
-              style: TextStyle(
+              localizations.saveRecord,
+              style: const TextStyle(
                 fontSize: 16,
                 fontWeight: FontWeight.bold,
                 color: Colors.white,
@@ -705,8 +710,8 @@ class ServicesViewState extends State<ServicesView> {
                   borderRadius: BorderRadius.circular(6),
                 ),
                 child: Text(
-                  "AUTO",
-                  style: TextStyle(
+                  localizations.auto,
+                  style: const TextStyle(
                     fontSize: 10,
                     fontWeight: FontWeight.bold,
                     color: Colors.white,
@@ -720,29 +725,32 @@ class ServicesViewState extends State<ServicesView> {
     );
   }
 
-  Widget _buildLoadingIndicator() {
-    return const Center(
+  Widget _buildLoadingIndicator(AppLocalizations localizations) {
+    return Center(
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          CircularProgressIndicator(color: _textColor),
-          SizedBox(height: 16),
-          Text("Loading services...", style: TextStyle(color: _textColor)),
+          const CircularProgressIndicator(color: _textColor),
+          const SizedBox(height: 16),
+          Text(
+            localizations.loadingServices,
+            style: const TextStyle(color: _textColor),
+          ),
         ],
       ),
     );
   }
 
-  Widget _buildErrorWidget(String error) {
+  Widget _buildErrorWidget(String error, AppLocalizations localizations) {
     return Center(
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
           const Icon(Icons.error_outline, color: Colors.red, size: 48),
           const SizedBox(height: 16),
-          const Text(
-            "Error loading data",
-            style: TextStyle(color: _textColor, fontSize: 18),
+          Text(
+            localizations.errorLoadingData,
+            style: const TextStyle(color: _textColor, fontSize: 18),
           ),
           const SizedBox(height: 8),
           Text(
@@ -755,21 +763,21 @@ class ServicesViewState extends State<ServicesView> {
     );
   }
 
-  Widget _buildNoVehiclesWidget() {
+  Widget _buildNoVehiclesWidget(AppLocalizations localizations) {
     return Center(
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
           const Icon(Icons.directions_car_outlined, color: _grey400, size: 64),
           const SizedBox(height: 16),
-          const Text(
-            'No vehicles registered.',
-            style: TextStyle(color: _textColor, fontSize: 18),
+          Text(
+            localizations.noVehicleFound,
+            style: const TextStyle(color: _textColor, fontSize: 18),
           ),
           const SizedBox(height: 8),
-          const Text(
-            'Please add a vehicle first to record services.',
-            style: TextStyle(color: _grey300),
+          Text(
+            localizations.addVehicleFirst,
+            style: const TextStyle(color: _grey300),
             textAlign: TextAlign.center,
           ),
         ],
@@ -777,12 +785,15 @@ class ServicesViewState extends State<ServicesView> {
     );
   }
 
-  Widget _buildMainContent(List<Vehicle> vehicles) {
+  Widget _buildMainContent(
+    List<Vehicle> vehicles,
+    AppLocalizations localizations,
+  ) {
     return FutureBuilder<Map<String, dynamic>>(
       future: _servicesDataFuture,
       builder: (context, servicesSnapshot) {
         if (servicesSnapshot.connectionState == ConnectionState.waiting) {
-          return _buildLoadingIndicator();
+          return _buildLoadingIndicator(localizations);
         }
 
         if (servicesSnapshot.hasData) {
@@ -801,15 +812,15 @@ class ServicesViewState extends State<ServicesView> {
             children: [
               _buildVehicleSelection(vehicles),
               const SizedBox(height: 24),
-              _buildMileageInput(),
+              _buildMileageInput(localizations),
               const SizedBox(height: 24),
-              _buildServicesSwitch(),
+              _buildServicesSwitch(localizations),
               const SizedBox(height: 16),
-              _buildServicesGrid(),
+              _buildServicesGrid(localizations),
               const SizedBox(height: 24),
-              _buildNotesInput(),
+              _buildNotesInput(localizations),
               const SizedBox(height: 24),
-              _buildSaveButton(),
+              _buildSaveButton(localizations),
               const SizedBox(height: 24),
             ],
           ),
@@ -820,6 +831,8 @@ class ServicesViewState extends State<ServicesView> {
 
   @override
   Widget build(BuildContext context) {
+    final localizations = AppLocalizations.of(context);
+
     return Scaffold(
       backgroundColor: _backgroundColor,
       appBar: AppBar(
@@ -836,8 +849,8 @@ class ServicesViewState extends State<ServicesView> {
           },
         ),
         title: Text(
-          "Services",
-          style: TextStyle(
+          localizations.services,
+          style: const TextStyle(
             color: _textColor,
             fontSize: 24,
             fontWeight: FontWeight.bold,
@@ -849,11 +862,9 @@ class ServicesViewState extends State<ServicesView> {
             IconButton(
               icon: const Icon(Icons.location_on, color: Color(0xFF2AEFDA)),
               onPressed: () {
-                _showSnackBar(
-                  "Location tracking enabled - Auto mileage available",
-                );
+                _showSnackBar(localizations.locationTrackingEnabled);
               },
-              tooltip: "Location tracking active",
+              tooltip: localizations.locationTrackingActive,
             ),
         ],
       ),
@@ -861,18 +872,21 @@ class ServicesViewState extends State<ServicesView> {
         future: _vehiclesFuture,
         builder: (context, vehiclesSnapshot) {
           if (vehiclesSnapshot.connectionState == ConnectionState.waiting) {
-            return _buildLoadingIndicator();
+            return _buildLoadingIndicator(localizations);
           } else if (vehiclesSnapshot.hasError) {
-            return _buildErrorWidget(vehiclesSnapshot.error.toString());
+            return _buildErrorWidget(
+              vehiclesSnapshot.error.toString(),
+              localizations,
+            );
           } else if (!vehiclesSnapshot.hasData ||
               vehiclesSnapshot.data!.isEmpty) {
-            return _buildNoVehiclesWidget();
+            return _buildNoVehiclesWidget(localizations);
           }
 
           final vehicles = vehiclesSnapshot.data!;
           _selectedVehicle ??= vehicles.first;
 
-          return _buildMainContent(vehicles);
+          return _buildMainContent(vehicles, localizations);
         },
       ),
     );

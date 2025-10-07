@@ -49,8 +49,8 @@
   "vehicle": "Vehículo",
   "mileage": "Kilometraje",
   "date": "Fecha",
-  "current_mileage": "Kilometraje Actual *",
-  "auto_mileage": "Kilometraje Automático",
+  "current_mileage": "Km Actual *",
+  "auto_mileage": "Km Automático",
   "enter_current_mileage": "Ingresa el kilometraje actual",
   "todays_auto_mileage": "Kilometraje automático de hoy: {distance} km",
   "total_mileage": "Total: {total} km",
@@ -75,5 +75,11 @@
   "error_saving_record": "Error guardando registro: {error}",
   "auto_mileage_set": "Kilometraje automático establecido en {estimated} km (Hoy: {today} km)",
   "loading_vehicles": "cargando los vehículos",
-  "view_all": "Ver Todo"
+  "view_all": "Ver Todo",
+  "service_information": "Información del Servicio",
+  "next_service": "Próximo Servicio",
+  "remaining": "Restante", 
+  "status": "Estado",
+  "pending": "Pend.",
+  "due_soon": "Próximo"
 }

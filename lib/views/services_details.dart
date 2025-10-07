@@ -1,6 +1,7 @@
-// services_details.dart (refactorizado y optimizado)
+// services_details.dart (refactorizado y optimizado con traducciones)
 import 'package:flutter/material.dart';
 import 'package:car_service_app/utils/index.dart';
+import 'package:car_service_app/services/app_localizations.dart';
 
 class Servicesdetails extends StatelessWidget {
   final Map<String, dynamic> serviceDetails;
@@ -82,27 +83,27 @@ class Servicesdetails extends StatelessWidget {
   }
 
   // Replica de _buildServiceInfoSection adaptada para services_details
-  Widget _buildServiceInfoSection() {
+  Widget _buildServiceInfoSection(AppLocalizations localizations) {
     final bool isDue = serviceDetails['isDue'] == true;
     final statusColor = isDue ? Colors.red.shade200 : Colors.yellow.shade200;
-    final statusText = isDue ? "Due soon" : "Pending";
+    final statusText = isDue ? localizations.dueSoon : localizations.pending;
 
     return Row(
       children: [
         _buildServiceInfoCard(
-          "Next Service",
+          localizations.nextService,
           "${MapUtils.getInt(serviceDetails, 'kmToNextService')}",
-          "Km",
+          localizations.km,
         ),
         const SizedBox(width: 8),
         _buildServiceInfoCard(
-          "Remaining",
+          localizations.remaining,
           "${MapUtils.getInt(serviceDetails, 'timeRemaining')}",
           MapUtils.getString(serviceDetails, 'timeUnit'),
         ),
         const SizedBox(width: 8),
         _buildServiceInfoCard(
-          "Status",
+          localizations.status,
           statusText,
           "",
           valueColor: statusColor,
@@ -183,6 +184,8 @@ class Servicesdetails extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final localizations = AppLocalizations.of(context);
+
     return Scaffold(
       backgroundColor: Colors.transparent,
       appBar: AppBar(
@@ -196,9 +199,9 @@ class Servicesdetails extends StatelessWidget {
           MapUtils.getString(
             serviceDetails,
             'service',
-            defaultValue: 'Service Details',
+            defaultValue: localizations.serviceDetails,
           ),
-          style: TextStyle(
+          style: const TextStyle(
             color: Colors.white, // Título en blanco
             fontSize: 24, // Tamaño consistente con otras pantallas
             fontWeight: FontWeight.bold,
@@ -215,16 +218,16 @@ class Servicesdetails extends StatelessWidget {
             Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Text(
-                  "Service Information",
-                  style: TextStyle(
+                Text(
+                  localizations.serviceInformation,
+                  style: const TextStyle(
                     fontSize: 20,
                     fontWeight: FontWeight.bold,
                     color: _textColor,
                   ),
                 ),
                 const SizedBox(height: 16),
-                _buildServiceInfoSection(),
+                _buildServiceInfoSection(localizations),
               ],
             ),
           ],

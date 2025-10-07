@@ -75,5 +75,11 @@
   "error_saving_record": "Error saving record: {error}",
   "auto_mileage_set": "Auto mileage set to {estimated} km (Today: {today} km)",
   "loading_vehicles": "loading vehicles",
-  "view_all": "View All"
+  "view_all": "View All",
+  "service_information": "Service Information",
+  "next_service": "Next Service",
+  "remaining": "Remaining",
+  "status": "Status",
+  "pending": "Pending",
+  "due_soon": "Due soon"
 }
