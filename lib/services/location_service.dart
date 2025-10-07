@@ -1,10 +1,12 @@
 import 'dart:math';
-import 'package:location/location.dart';
 import 'dart:async';
+import 'package:location/location.dart';
+import 'package:logger/logger.dart';
 
 class LocationService {
   static const double earthRadiusKm = 6371.0;
   static const double earthRadiusMiles = 3959.0;
+  static final Logger _logger = Logger();
 
   final Location _location = Location();
   bool _isTracking = false;
@@ -33,7 +35,7 @@ class LocationService {
       }
       return permission == PermissionStatus.granted;
     } catch (e) {
-      print('Error checking location permission: $e');
+      _logger.i('Error checking location permission: $e');
       return false;
     }
   }
@@ -72,7 +74,7 @@ class LocationService {
 
       return true;
     } catch (e) {
-      print('Error starting location tracking: $e');
+      _logger.i('Error starting location tracking: $e');
       _isTracking = false;
       return false;
     }

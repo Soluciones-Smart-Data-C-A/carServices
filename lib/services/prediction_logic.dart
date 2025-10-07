@@ -1,11 +1,12 @@
 // services/prediction_service.dart
-
+import 'package:logger/logger.dart';
 import 'package:car_service_app/models/vehicle.dart';
 import 'package:car_service_app/models/service_rule.dart';
 import 'package:car_service_app/models/service_icon.dart';
 import 'package:car_service_app/services/database_service.dart';
 
 class PredictionService {
+  static final Logger _logger = Logger();
   // Reglas de servicio por defecto con frecuencias más variadas
   final List<ServiceRule> _defaultServiceRules = [
     ServiceRule(serviceName: 'Cambio de Aceite', frequencyKm: 5000, iconId: 1),
@@ -77,7 +78,7 @@ class PredictionService {
       // Si no hay servicios en BD, usar reglas por defecto
       return _defaultServiceRules;
     } catch (e) {
-      print('Error obteniendo reglas de servicio: $e');
+      _logger.i('Error obteniendo reglas de servicio: $e');
       return _defaultServiceRules;
     }
   }
@@ -98,10 +99,10 @@ class PredictionService {
     final List<ServiceRule> serviceRules = await _getServiceRules();
 
     // DEBUG: Verificar los valores del vehículo
-    print('DEBUG - Vehicle data:');
-    print('  currentMileage: ${vehicle.currentMileage}');
-    print('  lastServiceMileage: ${vehicle.lastServiceMileage}');
-    print('  lastServiceDate: ${vehicle.lastServiceDate}');
+    _logger.i('DEBUG - Vehicle data:');
+    _logger.i('  currentMileage: ${vehicle.currentMileage}');
+    _logger.i('  lastServiceMileage: ${vehicle.lastServiceMileage}');
+    _logger.i('  lastServiceDate: ${vehicle.lastServiceDate}');
 
     final int mileageSinceLastService =
         vehicle.currentMileage - vehicle.lastServiceMileage;
@@ -110,9 +111,9 @@ class PredictionService {
         .inDays;
 
     // DEBUG: Verificar cálculos
-    print('DEBUG - Calculations:');
-    print('  mileageSinceLastService: $mileageSinceLastService');
-    print('  daysSinceLastService: $daysSinceLastService');
+    _logger.i('DEBUG - Calculations:');
+    _logger.i('  mileageSinceLastService: $mileageSinceLastService');
+    _logger.i('  daysSinceLastService: $daysSinceLastService');
 
     // Calcular uso diario promedio una sola vez
     final double avgKmPerDay = _calculateAverageDailyUsage(
@@ -120,7 +121,7 @@ class PredictionService {
       daysSinceLastService,
     );
 
-    print('  avgKmPerDay: $avgKmPerDay');
+    _logger.i('  avgKmPerDay: $avgKmPerDay');
 
     // Patrones para generar los tres rangos de porcentajes
     final List<double> highProgressPatterns = [
@@ -201,12 +202,12 @@ class PredictionService {
       final iconInfo = await _getIconInfo(rule.iconId);
 
       // DEBUG: Verificar cada servicio
-      print('DEBUG - Service: ${rule.serviceName}');
-      print('  frequencyKm: ${rule.frequencyKm}');
-      print('  simulatedKmSinceLastService: $simulatedKmSinceLastService');
-      print('  kmToNextService: $kmToNextService');
-      print('  percentageCompleted: ${percentageCompleted.round()}%');
-      print('  timeRemaining: ${timeInfo['value']} ${timeInfo['unit']}');
+      _logger.i('DEBUG - Service: ${rule.serviceName}');
+      _logger.i('  frequencyKm: ${rule.frequencyKm}');
+      _logger.i('  simulatedKmSinceLastService: $simulatedKmSinceLastService');
+      _logger.i('  kmToNextService: $kmToNextService');
+      _logger.i('  percentageCompleted: ${percentageCompleted.round()}%');
+      _logger.i('  timeRemaining: ${timeInfo['value']} ${timeInfo['unit']}');
 
       predictions.add({
         'service': rule.serviceName,
@@ -315,7 +316,7 @@ class PredictionService {
       final ServiceIcon icon = await DatabaseService.getServiceIconById(iconId);
       return {'icon': icon.icon, 'name': icon.name};
     } catch (e) {
-      print('Error obteniendo información del icono: $e');
+      _logger.i('Error obteniendo información del icono: $e');
       // Iconos por defecto para nuevos servicios
       final defaultIcons = {
         1: 'oil_change',

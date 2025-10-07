@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_localizations/flutter_localizations.dart';
 
 // Importa tus vistas
 import 'package:car_service_app/views/dashboard.dart';
@@ -9,17 +10,58 @@ import 'package:car_service_app/views/history.dart';
 // Importa los archivos de modelos y servicio de base de datos
 import 'package:car_service_app/models/vehicle.dart';
 import 'package:car_service_app/services/database_service.dart';
+import 'package:car_service_app/services/locale_service.dart';
 import 'package:car_service_app/services/location_service.dart';
+import 'package:car_service_app/services/app_localizations.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  await DatabaseService.initializeDb(); // Inicializa la base de datos
-  await LocationService.initialize(); // Inicializa el servicio de ubicación
+
+  // Ejecuta las inicializaciones de forma asíncrona
+  await Future.wait([
+    DatabaseService.initializeDb(),
+    LocationService.initialize(),
+  ]);
+
   runApp(CarServiceApp());
 }
 
-class CarServiceApp extends StatelessWidget {
+class CarServiceApp extends StatefulWidget {
   const CarServiceApp({super.key});
+
+  @override
+  State<CarServiceApp> createState() => _CarServiceAppState();
+
+  static void setLocale(BuildContext context, Locale newLocale) {
+    _CarServiceAppState? state = context
+        .findAncestorStateOfType<_CarServiceAppState>();
+    state?.setLocale(newLocale);
+  }
+}
+
+class _CarServiceAppState extends State<CarServiceApp> {
+  Locale? _locale;
+
+  void setLocale(Locale locale) {
+    setState(() {
+      _locale = locale;
+    });
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    _loadSavedLocale();
+  }
+
+  void _loadSavedLocale() async {
+    final savedLocale = await LocaleService.getLocale();
+    if (savedLocale != null) {
+      setState(() {
+        _locale = Locale(savedLocale);
+      });
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -31,6 +73,14 @@ class CarServiceApp extends StatelessWidget {
         canvasColor: Color(0xFF10162A),
         colorScheme: ColorScheme.dark(primary: Color(0xFF2AEFDA)),
       ),
+      locale: _locale,
+      supportedLocales: [Locale('en', ''), Locale('es', '')],
+      localizationsDelegates: [
+        AppLocalizations.delegate,
+        GlobalMaterialLocalizations.delegate,
+        GlobalWidgetsLocalizations.delegate,
+        GlobalCupertinoLocalizations.delegate,
+      ],
       home: MainScreen(),
     );
   }
@@ -151,7 +201,7 @@ class _MainScreenState extends State<MainScreen> {
               Icon(Icons.error_outline, color: Colors.red, size: 64),
               SizedBox(height: 16),
               Text(
-                'Error loading data',
+                AppLocalizations.of(context).errorLoadingData,
                 style: TextStyle(color: Colors.white, fontSize: 18),
               ),
               SizedBox(height: 8),
@@ -188,12 +238,12 @@ class _MainScreenState extends State<MainScreen> {
               ),
               SizedBox(height: 16),
               Text(
-                'No vehicles registered',
+                AppLocalizations.of(context).noVehicleFound,
                 style: TextStyle(color: Colors.white, fontSize: 18),
               ),
               SizedBox(height: 8),
               Text(
-                'Please add a vehicle to get started',
+                AppLocalizations.of(context).addVehicleToStart,
                 style: TextStyle(color: Colors.white70),
               ),
             ],
@@ -223,22 +273,22 @@ class _MainScreenState extends State<MainScreen> {
           showUnselectedLabels: true,
           currentIndex: _selectedIndex,
           onTap: _onItemTapped,
-          items: const <BottomNavigationBarItem>[
+          items: [
             BottomNavigationBarItem(
               icon: Icon(Icons.home_outlined),
-              label: 'Home',
+              label: AppLocalizations.of(context).home,
             ),
             BottomNavigationBarItem(
               icon: Icon(Icons.add_outlined),
-              label: 'Services',
+              label: AppLocalizations.of(context).services,
             ),
             BottomNavigationBarItem(
               icon: Icon(Icons.history_outlined),
-              label: 'History',
+              label: AppLocalizations.of(context).history,
             ),
             BottomNavigationBarItem(
               icon: Icon(Icons.settings_outlined),
-              label: 'Settings',
+              label: AppLocalizations.of(context).settings,
             ),
           ],
         ),

@@ -1,6 +1,7 @@
 // database_service.dart
 import 'package:sqflite/sqflite.dart';
 import 'package:path/path.dart';
+import 'package:logger/logger.dart';
 import 'package:car_service_app/models/vehicle.dart';
 import 'package:car_service_app/models/service_record.dart';
 import 'package:car_service_app/models/service_rule.dart';
@@ -9,6 +10,7 @@ import 'package:car_service_app/models/service_icon.dart';
 
 class DatabaseService {
   static Database? _database;
+  static final Logger _logger = Logger();
 
   // Table names
   static const String _vehiclesTable = 'vehicles';
@@ -336,11 +338,11 @@ class DatabaseService {
       final tables = await db.rawQuery(
         "SELECT name FROM sqlite_master WHERE type='table' AND name NOT LIKE 'sqlite_%'",
       );
-      print(
+      _logger.i(
         '✅ Database initialized successfully with tables: ${tables.map((t) => t['name']).toList()}',
       );
     } catch (e) {
-      print('❌ Error initializing database: $e');
+      _logger.i('❌ Error initializing database: $e');
       rethrow;
     }
   }

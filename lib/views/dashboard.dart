@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:logger/logger.dart';
 import 'package:car_service_app/models/vehicle.dart';
 import 'package:car_service_app/models/service_record.dart';
-import 'package:car_service_app/services/location_service.dart';
+import 'package:car_service_app/services/app_localizations.dart';
 import 'package:car_service_app/services/database_service.dart';
 import 'package:car_service_app/services/prediction_logic.dart';
 import 'package:car_service_app/utils/index.dart';
@@ -15,13 +16,13 @@ class DashboardView extends StatefulWidget {
   final bool locationEnabled;
 
   const DashboardView({
-    Key? key,
+    super.key,
     required this.onNavigateToServices,
     required this.onNavigateToHistory,
     required this.onNavigateToSettings,
     required this.todayDistance,
     required this.locationEnabled,
-  }) : super(key: key);
+  });
 
   @override
   State<DashboardView> createState() => _DashboardViewState();
@@ -29,8 +30,8 @@ class DashboardView extends StatefulWidget {
 
 class _DashboardViewState extends State<DashboardView> {
   // Services
-  final LocationService _locationService = LocationService();
   late final PredictionService _predictionService;
+  static final Logger _logger = Logger();
 
   // Futures
   late Future<List<Vehicle>> _vehiclesFuture;
@@ -71,7 +72,7 @@ class _DashboardViewState extends State<DashboardView> {
       }
       return null;
     } catch (e) {
-      print('Error loading current vehicle: $e');
+      _logger.i('Error loading current vehicle: $e');
       return null;
     }
   }
@@ -162,7 +163,7 @@ class _DashboardViewState extends State<DashboardView> {
         IconButton(
           onPressed: _refreshData,
           icon: const Icon(Icons.refresh, color: Colors.white),
-          tooltip: 'Refresh',
+          tooltip: AppLocalizations.of(context).retry,
         ),
       ],
     );
@@ -200,11 +201,23 @@ class _DashboardViewState extends State<DashboardView> {
       children: [
         Row(
           children: [
-            _buildServiceInfoCard("Last Service", "12", "days ago"),
+            _buildServiceInfoCard(
+              AppLocalizations.of(context).lastService,
+              "12",
+              AppLocalizations.of(context).daysAgo,
+            ),
             const SizedBox(width: 12),
-            _buildServiceInfoCard("Estimated", "53,000", "km"),
+            _buildServiceInfoCard(
+              AppLocalizations.of(context).estimated,
+              "53,000",
+              AppLocalizations.of(context).km,
+            ),
             const SizedBox(width: 12),
-            _buildServiceInfoCard("Daily", "15.4", "km"),
+            _buildServiceInfoCard(
+              AppLocalizations.of(context).daily,
+              "15.4",
+              AppLocalizations.of(context).km,
+            ),
           ],
         ),
       ],
@@ -234,7 +247,7 @@ class _DashboardViewState extends State<DashboardView> {
             stops: [0.1, 0.3, 0.7, 1.0],
           ),
           border: Border.all(
-            color: _secondaryColor.withOpacity(0.4),
+            color: _secondaryColor.withValues(alpha: 0.4),
             width: 1.0,
           ),
         ),
@@ -280,8 +293,8 @@ class _DashboardViewState extends State<DashboardView> {
   Widget _buildLocationCard() {
     return Card(
       color: widget.locationEnabled
-          ? Colors.green.withOpacity(0.2)
-          : Colors.orange.withOpacity(0.2),
+          ? Colors.green.withValues(alpha: 0.2)
+          : Colors.orange.withValues(alpha: 0.2),
       child: Padding(
         padding: const EdgeInsets.all(16.0),
         child: Row(
@@ -298,8 +311,8 @@ class _DashboardViewState extends State<DashboardView> {
                 children: [
                   Text(
                     widget.locationEnabled
-                        ? 'Location Tracking Active'
-                        : 'Location Tracking Disabled',
+                        ? AppLocalizations.of(context).locationTrackingActive
+                        : AppLocalizations.of(context).locationTrackingDisabled,
                     style: const TextStyle(
                       color: Colors.white,
                       fontSize: 16,
@@ -309,8 +322,8 @@ class _DashboardViewState extends State<DashboardView> {
                   const SizedBox(height: 4),
                   Text(
                     widget.locationEnabled
-                        ? 'Today\'s distance: ${widget.todayDistance.toStringAsFixed(1)} km'
-                        : 'Enable location for auto mileage tracking',
+                        ? '${AppLocalizations.of(context).todayDistance}: ${widget.todayDistance.toStringAsFixed(1)} ${AppLocalizations.of(context).km}'
+                        : AppLocalizations.of(context).enableLocation,
                     style: TextStyle(color: Colors.white70, fontSize: 14),
                   ),
                 ],
@@ -328,7 +341,7 @@ class _DashboardViewState extends State<DashboardView> {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
-          "Upcoming Services",
+          AppLocalizations.of(context).upcomingServices,
           style: TextStyle(
             fontSize: 20,
             fontWeight: FontWeight.bold,
@@ -342,9 +355,13 @@ class _DashboardViewState extends State<DashboardView> {
             if (snapshot.connectionState == ConnectionState.waiting) {
               return _buildLoadingCard();
             } else if (snapshot.hasError) {
-              return _buildErrorCard('Error loading upcoming services');
+              return _buildErrorCard(
+                AppLocalizations.of(context).errorLoadingData,
+              );
             } else if (!snapshot.hasData || snapshot.data!.isEmpty) {
-              return _buildEmptyCard('No upcoming services');
+              return _buildEmptyCard(
+                AppLocalizations.of(context).noServiceRecords,
+              );
             }
 
             return _buildUpcomingServicesList(snapshot.data!);
@@ -398,7 +415,7 @@ class _DashboardViewState extends State<DashboardView> {
               width: isUrgent ? 2 : 1,
             ),
           ),
-          color: Colors.black.withOpacity(0.3),
+          color: Colors.black.withValues(alpha: 0.3),
           child: Padding(
             padding: const EdgeInsets.all(16.0),
             child: Row(
@@ -430,7 +447,7 @@ class _DashboardViewState extends State<DashboardView> {
                       ),
                       const SizedBox(height: 4),
                       Text(
-                        'Recommended at ${service['kmToNextService'] ?? 'N/A'} km',
+                        '${AppLocalizations.of(context).recommendedAt} ${service['kmToNextService'] ?? 'N/A'} ${AppLocalizations.of(context).km}',
                         style: TextStyle(
                           fontSize: 14,
                           color: isUrgent ? Colors.red.shade400 : _grey300,
@@ -438,7 +455,7 @@ class _DashboardViewState extends State<DashboardView> {
                       ),
                       const SizedBox(height: 2),
                       Text(
-                        'Approx. in ${service['timeRemaining'] ?? 'N/A'} ${service['timeUnit'] ?? ''}',
+                        '${AppLocalizations.of(context).approxIn} ${service['timeRemaining'] ?? 'N/A'} ${service['timeUnit'] ?? ''}',
                         style: TextStyle(
                           fontSize: 12,
                           color: isUrgent ? Colors.red.shade400 : _grey300,
@@ -453,7 +470,7 @@ class _DashboardViewState extends State<DashboardView> {
                     vertical: 6,
                   ),
                   decoration: BoxDecoration(
-                    color: percentageColor.withOpacity(0.2),
+                    color: percentageColor.withValues(alpha: 0.2),
                     borderRadius: BorderRadius.circular(20),
                     border: Border.all(color: percentageColor, width: 1.5),
                   ),
@@ -483,7 +500,7 @@ class _DashboardViewState extends State<DashboardView> {
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
             Text(
-              'Recent Services',
+              AppLocalizations.of(context).recentServices,
               style: TextStyle(
                 color: Colors.white,
                 fontSize: 20,
@@ -494,7 +511,10 @@ class _DashboardViewState extends State<DashboardView> {
               onPressed: () {
                 // TODO: Navigate to full history
               },
-              child: Text('View All', style: TextStyle(color: _primaryColor)),
+              child: Text(
+                AppLocalizations.of(context).viewAll,
+                style: TextStyle(color: _primaryColor),
+              ),
             ),
           ],
         ),
@@ -505,9 +525,13 @@ class _DashboardViewState extends State<DashboardView> {
             if (snapshot.connectionState == ConnectionState.waiting) {
               return _buildLoadingCard();
             } else if (snapshot.hasError) {
-              return _buildErrorCard('Error loading recent services');
+              return _buildErrorCard(
+                AppLocalizations.of(context).errorLoadingHistory,
+              );
             } else if (!snapshot.hasData || snapshot.data!.isEmpty) {
-              return _buildEmptyCard('No recent services');
+              return _buildEmptyCard(
+                AppLocalizations.of(context).noServiceRecords,
+              );
             }
 
             return _buildRecentServicesList(snapshot.data!);
@@ -523,7 +547,7 @@ class _DashboardViewState extends State<DashboardView> {
 
   Widget _buildServiceCard(ServiceRecord service) {
     return Card(
-      color: Colors.black.withOpacity(0.3),
+      color: Colors.black.withValues(alpha: 0.3),
       margin: const EdgeInsets.only(bottom: 8),
       child: Padding(
         padding: const EdgeInsets.all(12.0),
@@ -533,7 +557,7 @@ class _DashboardViewState extends State<DashboardView> {
               width: 40,
               height: 40,
               decoration: BoxDecoration(
-                color: Colors.blue.withOpacity(0.2),
+                color: Colors.blue.withValues(alpha: 0.2),
                 borderRadius: BorderRadius.circular(6),
               ),
               child: const Icon(Icons.build, color: Colors.blue, size: 20),
@@ -544,7 +568,7 @@ class _DashboardViewState extends State<DashboardView> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    'Service at ${service.mileage} km',
+                    '${AppLocalizations.of(context).serviceAt} ${service.mileage} ${AppLocalizations.of(context).km}',
                     style: const TextStyle(
                       color: Colors.white,
                       fontSize: 14,
@@ -571,7 +595,7 @@ class _DashboardViewState extends State<DashboardView> {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
-          'Quick Actions',
+          AppLocalizations.of(context).quickActions,
           style: TextStyle(
             color: Colors.white,
             fontSize: 20,
@@ -587,7 +611,7 @@ class _DashboardViewState extends State<DashboardView> {
               width: MediaQuery.of(context).size.width * 0.4,
               child: _buildActionButton(
                 icon: Icons.add_circle_outline,
-                title: 'Add Service',
+                title: AppLocalizations.of(context).addService,
                 color: _primaryColor,
                 onTap: widget.onNavigateToServices,
               ),
@@ -596,7 +620,7 @@ class _DashboardViewState extends State<DashboardView> {
               width: MediaQuery.of(context).size.width * 0.4,
               child: _buildActionButton(
                 icon: Icons.directions_car,
-                title: 'Add Vehicle',
+                title: AppLocalizations.of(context).addVehicle,
                 color: Colors.blue,
                 onTap: () => widget.onNavigateToSettings(),
               ),
@@ -605,7 +629,7 @@ class _DashboardViewState extends State<DashboardView> {
               width: MediaQuery.of(context).size.width * 0.4,
               child: _buildActionButton(
                 icon: Icons.history,
-                title: 'View History',
+                title: AppLocalizations.of(context).viewHistory,
                 color: Colors.orange,
                 onTap: () => widget.onNavigateToHistory(),
               ),
@@ -614,7 +638,7 @@ class _DashboardViewState extends State<DashboardView> {
               width: MediaQuery.of(context).size.width * 0.4,
               child: _buildActionButton(
                 icon: Icons.settings,
-                title: 'Settings',
+                title: AppLocalizations.of(context).settings,
                 color: Colors.purple,
                 onTap: () => widget.onNavigateToSettings(),
               ),
@@ -632,7 +656,7 @@ class _DashboardViewState extends State<DashboardView> {
     required VoidCallback onTap,
   }) {
     return Card(
-      color: color.withOpacity(0.1),
+      color: color.withValues(alpha: 0.1),
       child: InkWell(
         onTap: onTap,
         borderRadius: BorderRadius.circular(8),
@@ -665,18 +689,30 @@ class _DashboardViewState extends State<DashboardView> {
   }
 
   Widget _buildLoadingCard() {
-    return const Card(
+    return Card(
       color: Colors.black,
       child: Padding(
-        padding: EdgeInsets.all(24.0),
-        child: Center(child: CircularProgressIndicator()),
+        padding: const EdgeInsets.all(24.0),
+        child: Center(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              CircularProgressIndicator(color: _primaryColor),
+              const SizedBox(height: 16),
+              Text(
+                AppLocalizations.of(context).loadingServices,
+                style: TextStyle(color: _textColor),
+              ),
+            ],
+          ),
+        ),
       ),
     );
   }
 
   Widget _buildErrorCard(String message) {
     return Card(
-      color: Colors.red.withOpacity(0.2),
+      color: Colors.red.withValues(alpha: 0.2),
       child: Padding(
         padding: const EdgeInsets.all(16.0),
         child: Row(
@@ -697,11 +733,22 @@ class _DashboardViewState extends State<DashboardView> {
 
   Widget _buildEmptyCard(String message) {
     return Card(
-      color: Colors.black.withOpacity(0.3),
+      color: Colors.black.withValues(alpha: 0.3),
       child: Padding(
         padding: const EdgeInsets.all(24.0),
         child: Center(
-          child: Text(message, style: const TextStyle(color: Colors.white70)),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(Icons.info_outline, color: _grey300, size: 48),
+              const SizedBox(height: 16),
+              Text(
+                message,
+                style: TextStyle(color: Colors.white70),
+                textAlign: TextAlign.center,
+              ),
+            ],
+          ),
         ),
       ),
     );
@@ -715,9 +762,14 @@ class _DashboardViewState extends State<DashboardView> {
           const Icon(Icons.error_outline, color: Colors.red, size: 48),
           const SizedBox(height: 16),
           Text(
-            'Error: $error',
+            '${AppLocalizations.of(context).errorLoadingData}: $error',
             style: const TextStyle(color: _textColor),
             textAlign: TextAlign.center,
+          ),
+          const SizedBox(height: 16),
+          ElevatedButton(
+            onPressed: _refreshData,
+            child: Text(AppLocalizations.of(context).retry),
           ),
         ],
       ),
@@ -725,20 +777,24 @@ class _DashboardViewState extends State<DashboardView> {
   }
 
   Widget _buildNoVehicleWidget() {
-    return const Center(
+    return Center(
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Icon(Icons.directions_car_outlined, size: 64, color: Colors.white54),
-          SizedBox(height: 16),
-          Text(
-            'No vehicle found',
-            style: TextStyle(color: Colors.white, fontSize: 18),
+          const Icon(
+            Icons.directions_car_outlined,
+            size: 64,
+            color: Colors.white54,
           ),
-          SizedBox(height: 8),
+          const SizedBox(height: 16),
           Text(
-            'Please add a vehicle to get started',
-            style: TextStyle(color: Colors.white70),
+            AppLocalizations.of(context).noVehicleFound,
+            style: const TextStyle(color: Colors.white, fontSize: 18),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            AppLocalizations.of(context).addVehicleToStart,
+            style: const TextStyle(color: Colors.white70),
           ),
         ],
       ),
@@ -757,19 +813,22 @@ class _DashboardViewState extends State<DashboardView> {
       onTap: (index) {
         if (index != 0) Navigator.pop(context);
       },
-      items: const [
-        BottomNavigationBarItem(icon: Icon(Icons.home_outlined), label: 'Home'),
+      items: [
+        BottomNavigationBarItem(
+          icon: Icon(Icons.home_outlined),
+          label: AppLocalizations.of(context).home,
+        ),
         BottomNavigationBarItem(
           icon: Icon(Icons.add_outlined),
-          label: 'Services',
+          label: AppLocalizations.of(context).services,
         ),
         BottomNavigationBarItem(
           icon: Icon(Icons.history_outlined),
-          label: 'History',
+          label: AppLocalizations.of(context).history,
         ),
         BottomNavigationBarItem(
           icon: Icon(Icons.settings_outlined),
-          label: 'Settings',
+          label: AppLocalizations.of(context).settings,
         ),
       ],
     );

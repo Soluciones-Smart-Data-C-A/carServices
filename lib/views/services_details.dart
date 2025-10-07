@@ -1,5 +1,6 @@
 // services_details.dart (refactorizado y optimizado)
 import 'package:flutter/material.dart';
+import 'package:car_service_app/utils/index.dart';
 
 class Servicesdetails extends StatelessWidget {
   final Map<String, dynamic> serviceDetails;
@@ -12,35 +13,8 @@ class Servicesdetails extends StatelessWidget {
   });
 
   // Constantes (consistentes con dashboard.dart)
-  static const _primaryColor = Color(0xFF2AEFDA);
   static const _secondaryColor = Color(0xFF75A6B1);
   static const _textColor = Colors.white;
-
-  // Métodos auxiliares para obtener datos
-  String _getString(String key, {String defaultValue = 'N/A'}) {
-    return serviceDetails[key]?.toString() ?? defaultValue;
-  }
-
-  int _getInt(String key, {int defaultValue = 0}) {
-    if (serviceDetails[key] == null) return defaultValue;
-    if (serviceDetails[key] is int) return serviceDetails[key];
-    if (serviceDetails[key] is String) {
-      return int.tryParse(serviceDetails[key]) ?? defaultValue;
-    }
-    return defaultValue;
-  }
-
-  double _getDouble(String key, {double defaultValue = 0.0}) {
-    if (serviceDetails[key] == null) return defaultValue;
-    if (serviceDetails[key] is double) return serviceDetails[key];
-    if (serviceDetails[key] is String) {
-      return double.tryParse(serviceDetails[key]) ?? defaultValue;
-    }
-    if (serviceDetails[key] is int) {
-      return (serviceDetails[key] as int).toDouble();
-    }
-    return defaultValue;
-  }
 
   Widget _buildServiceInfoCard(
     String title,
@@ -65,7 +39,7 @@ class Servicesdetails extends StatelessWidget {
             stops: [0.1, 0.3, 0.7, 1.0],
           ),
           border: Border.all(
-            color: _secondaryColor.withOpacity(0.4),
+            color: _secondaryColor.withValues(alpha: 0.4),
             width: 1.0,
           ),
         ),
@@ -117,14 +91,14 @@ class Servicesdetails extends StatelessWidget {
       children: [
         _buildServiceInfoCard(
           "Next Service",
-          "${_getInt('kmToNextService')}",
+          "${MapUtils.getInt(serviceDetails, 'kmToNextService')}",
           "Km",
         ),
         const SizedBox(width: 8),
         _buildServiceInfoCard(
           "Remaining",
-          "${_getInt('timeRemaining')}",
-          _getString('timeUnit'),
+          "${MapUtils.getInt(serviceDetails, 'timeRemaining')}",
+          MapUtils.getString(serviceDetails, 'timeUnit'),
         ),
         const SizedBox(width: 8),
         _buildServiceInfoCard(
@@ -138,7 +112,10 @@ class Servicesdetails extends StatelessWidget {
   }
 
   Widget _buildVehicleImageWithProgress() {
-    final int percentage = _getInt('percentageRemaining');
+    final int percentage = MapUtils.getInt(
+      serviceDetails,
+      'percentageRemaining',
+    );
     final double imageHeight = 400;
     final double gradientTop = (1.0 - (percentage / 100)) * imageHeight;
 
@@ -177,7 +154,7 @@ class Servicesdetails extends StatelessWidget {
                 end: Alignment.bottomCenter,
                 colors: [
                   progressColor,
-                  progressColor.withOpacity(0.7),
+                  progressColor.withValues(alpha: 0.7),
                   Colors.transparent,
                 ],
                 stops: const [0.0, 0.1, 0.5],
@@ -216,7 +193,11 @@ class Servicesdetails extends StatelessWidget {
           onPressed: () => Navigator.pop(context),
         ),
         title: Text(
-          _getString('service', defaultValue: 'Service Details'),
+          MapUtils.getString(
+            serviceDetails,
+            'service',
+            defaultValue: 'Service Details',
+          ),
           style: TextStyle(
             color: Colors.white, // Título en blanco
             fontSize: 24, // Tamaño consistente con otras pantallas

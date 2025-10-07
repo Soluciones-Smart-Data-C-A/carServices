@@ -3,15 +3,35 @@ import 'package:flutter/material.dart';
 import 'package:car_service_app/main.dart';
 import 'package:car_service_app/models/vehicle.dart';
 import 'package:car_service_app/services/database_service.dart';
+import 'package:car_service_app/services/app_localizations.dart';
+import 'package:car_service_app/services/locale_service.dart';
 
-class SettingsView extends StatelessWidget {
+class SettingsView extends StatefulWidget {
   const SettingsView({super.key});
+
+  @override
+  State<SettingsView> createState() => _SettingsViewState();
+}
+
+class _SettingsViewState extends State<SettingsView> {
   static const _backgroundColor = Colors.transparent;
-  static const _primaryColor = Color(0xFF2AEFDA);
   static const _secondaryColor = Color(0xFF75A6B1);
   static const _textColor = Colors.white;
   static const _grey300 = Color(0xFFE0E0E0);
-  static const _grey400 = Color(0xFFBDBDBD);
+
+  void _changeLanguage(BuildContext context, String languageCode) {
+    // Actualización inmediata del UI
+    setState(() {});
+
+    // Actualiza el locale inmediatamente
+    Locale newLocale = Locale(languageCode);
+    CarServiceApp.setLocale(context, newLocale);
+
+    // Guardar en segundo plano sin afectar el UI
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      await LocaleService.saveLocale(languageCode);
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -30,8 +50,8 @@ class SettingsView extends StatelessWidget {
             );
           },
         ),
-        title: const Text(
-          "Settings",
+        title: Text(
+          AppLocalizations.of(context).settings,
           style: TextStyle(
             color: _textColor,
             fontSize: 24,
@@ -67,8 +87,8 @@ class SettingsView extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 // Vehicle management section
-                const Text(
-                  "My Vehicles",
+                Text(
+                  AppLocalizations.of(context).myVehicles,
                   style: TextStyle(
                     fontSize: 20,
                     fontWeight: FontWeight.bold,
@@ -77,19 +97,19 @@ class SettingsView extends StatelessWidget {
                 ),
                 const SizedBox(height: 8),
                 Text(
-                  "Registered vehicles (${vehicles.length}/$registrationLimit):",
+                  "${AppLocalizations.of(context).registeredVehicles} (${vehicles.length}/$registrationLimit):",
                   style: const TextStyle(fontSize: 16, color: _grey300),
                 ),
 
                 const SizedBox(height: 16),
 
                 vehicles.isEmpty
-                    ? const Center(
+                    ? Center(
                         child: Padding(
-                          padding: EdgeInsets.all(20),
+                          padding: const EdgeInsets.all(20),
                           child: Text(
-                            "You don't have any registered vehicles yet.",
-                            style: TextStyle(color: _grey300),
+                            AppLocalizations.of(context).noVehiclesRegistered,
+                            style: const TextStyle(color: _grey300),
                           ),
                         ),
                       )
@@ -101,7 +121,7 @@ class SettingsView extends StatelessWidget {
                           final vehicle = vehicles[index];
                           return Card(
                             margin: const EdgeInsets.only(bottom: 12),
-                            color: Colors.black.withOpacity(0.3),
+                            color: Colors.black.withValues(alpha: 0.3),
                             shape: RoundedRectangleBorder(
                               borderRadius: BorderRadius.circular(12),
                               side: const BorderSide(
@@ -119,7 +139,7 @@ class SettingsView extends StatelessWidget {
                                 style: const TextStyle(color: _textColor),
                               ),
                               subtitle: Text(
-                                "Mileage: ${vehicle.currentMileage} km",
+                                "${AppLocalizations.of(context).mileage}: ${vehicle.currentMileage} ${AppLocalizations.of(context).km}",
                                 style: const TextStyle(color: _grey300),
                               ),
                               trailing: const Icon(
@@ -146,8 +166,8 @@ class SettingsView extends StatelessWidget {
                 const SizedBox(height: 24),
 
                 // Application settings options
-                const Text(
-                  "App Settings",
+                Text(
+                  AppLocalizations.of(context).appSettings,
                   style: TextStyle(
                     fontSize: 20,
                     fontWeight: FontWeight.bold,
@@ -157,7 +177,7 @@ class SettingsView extends StatelessWidget {
                 const SizedBox(height: 16),
 
                 Card(
-                  color: Colors.black.withOpacity(0.3),
+                  color: Colors.black.withValues(alpha: 0.3),
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(12),
                     side: const BorderSide(color: _secondaryColor, width: 1),
@@ -169,22 +189,57 @@ class SettingsView extends StatelessWidget {
                           Icons.notifications,
                           color: _textColor,
                         ),
-                        title: const Text(
-                          "Notifications",
-                          style: TextStyle(color: _textColor),
+                        title: Text(
+                          AppLocalizations.of(context).notifications,
+                          style: const TextStyle(color: _textColor),
                         ),
                         trailing: Switch(
                           value: true,
-                          activeColor: _secondaryColor,
+                          activeThumbColor: _secondaryColor,
                           onChanged: (bool value) {},
                         ),
                       ),
                       const Divider(color: _secondaryColor, height: 1),
                       ListTile(
+                        leading: const Icon(Icons.language, color: _textColor),
+                        title: Text(
+                          AppLocalizations.of(context).language,
+                          style: const TextStyle(color: _textColor),
+                        ),
+                        trailing: DropdownButton<String>(
+                          value: Localizations.localeOf(context).languageCode,
+                          icon: const Icon(
+                            Icons.arrow_drop_down,
+                            color: _textColor,
+                          ),
+                          dropdownColor: const Color(0xFF10162A),
+                          underline: Container(),
+                          onChanged: (String? newValue) {
+                            if (newValue != null) {
+                              _changeLanguage(context, newValue);
+                            }
+                          },
+                          items: <String>['en', 'es']
+                              .map<DropdownMenuItem<String>>((String value) {
+                                return DropdownMenuItem<String>(
+                                  value: value,
+                                  child: Text(
+                                    value == 'en'
+                                        ? AppLocalizations.of(context).english
+                                        : AppLocalizations.of(context).spanish,
+                                    style: const TextStyle(color: _textColor),
+                                  ),
+                                );
+                              })
+                              .toList(),
+                        ),
+                      ),
+                      const Divider(color: _secondaryColor, height: 1),
+                      ListTile(
                         leading: const Icon(Icons.lock, color: _textColor),
-                        title: const Text(
-                          "Change Password",
-                          style: TextStyle(color: _textColor),
+                        title: Text(
+                          AppLocalizations.of(context).changePassword,
+                          style: const TextStyle(color: _textColor),
                         ),
                         trailing: const Icon(
                           Icons.arrow_forward_ios,
@@ -197,7 +252,7 @@ class SettingsView extends StatelessWidget {
                       ListTile(
                         leading: Icon(Icons.logout, color: Colors.red[300]),
                         title: Text(
-                          "Sign Out",
+                          AppLocalizations.of(context).signOut,
                           style: TextStyle(color: Colors.red[300]),
                         ),
                         trailing: Icon(
@@ -216,8 +271,8 @@ class SettingsView extends StatelessWidget {
                 const SizedBox(height: 24),
 
                 // App information
-                const Text(
-                  "App Information",
+                Text(
+                  AppLocalizations.of(context).appInformation,
                   style: TextStyle(
                     fontSize: 20,
                     fontWeight: FontWeight.bold,
@@ -227,7 +282,7 @@ class SettingsView extends StatelessWidget {
                 const SizedBox(height: 16),
 
                 Card(
-                  color: Colors.black.withOpacity(0.3),
+                  color: Colors.black.withValues(alpha: 0.3),
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(12),
                     side: const BorderSide(color: _secondaryColor, width: 1),
@@ -235,9 +290,9 @@ class SettingsView extends StatelessWidget {
                   child: Column(
                     children: [
                       ListTile(
-                        title: const Text(
-                          "Version",
-                          style: TextStyle(color: _textColor),
+                        title: Text(
+                          AppLocalizations.of(context).version,
+                          style: const TextStyle(color: _textColor),
                         ),
                         subtitle: const Text(
                           "1.0.0",
@@ -246,9 +301,9 @@ class SettingsView extends StatelessWidget {
                       ),
                       const Divider(color: _secondaryColor, height: 1),
                       ListTile(
-                        title: const Text(
-                          "Developer",
-                          style: TextStyle(color: _textColor),
+                        title: Text(
+                          AppLocalizations.of(context).developer,
+                          style: const TextStyle(color: _textColor),
                         ),
                         subtitle: const Text(
                           "Car Service Team",

@@ -1,5 +1,6 @@
 // services.dart (with automatic mileage feature)
 import 'package:flutter/material.dart';
+import 'package:logger/logger.dart';
 import 'package:car_service_app/main.dart';
 import 'package:car_service_app/models/vehicle.dart';
 import 'package:car_service_app/models/service_record.dart';
@@ -11,13 +12,14 @@ class ServicesView extends StatefulWidget {
   const ServicesView({super.key});
 
   @override
-  _ServicesViewState createState() => _ServicesViewState();
+  ServicesViewState createState() => ServicesViewState();
 }
 
-class _ServicesViewState extends State<ServicesView> {
+class ServicesViewState extends State<ServicesView> {
   // Controllers
   final TextEditingController _mileageController = TextEditingController();
   final TextEditingController _notesController = TextEditingController();
+  static final Logger _logger = Logger();
 
   // State
   Map<int, bool> _selectedServices = {};
@@ -92,7 +94,7 @@ class _ServicesViewState extends State<ServicesView> {
         'selection': selectionMap,
       };
     } catch (e) {
-      print('Error loading services data: $e');
+      _logger.i('Error loading services data: $e');
       return {'services': [], 'icons': {}, 'selection': {}};
     }
   }
@@ -274,7 +276,9 @@ class _ServicesViewState extends State<ServicesView> {
       child: Container(
         margin: const EdgeInsets.all(4),
         decoration: BoxDecoration(
-          color: isSelected ? _primaryColor : Colors.black.withOpacity(0.5),
+          color: isSelected
+              ? _primaryColor
+              : Colors.black.withValues(alpha: 0.5),
           borderRadius: BorderRadius.circular(12),
           border: Border.all(
             color: isSelected ? Colors.white : _secondaryColor,
@@ -328,8 +332,8 @@ class _ServicesViewState extends State<ServicesView> {
 
     return Card(
       color: isSelected
-          ? Colors.black.withOpacity(0.5)
-          : Colors.black.withOpacity(0.3),
+          ? Colors.black.withValues(alpha: 0.5)
+          : Colors.black.withValues(alpha: 0.3),
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(12),
         side: BorderSide(
@@ -385,7 +389,7 @@ class _ServicesViewState extends State<ServicesView> {
               Container(
                 padding: const EdgeInsets.all(6),
                 decoration: BoxDecoration(
-                  color: _primaryColor.withOpacity(0.2),
+                  color: _primaryColor.withValues(alpha: 0.2),
                   shape: BoxShape.circle,
                 ),
                 child: const Icon(
@@ -493,9 +497,9 @@ class _ServicesViewState extends State<ServicesView> {
           Container(
             padding: const EdgeInsets.all(12),
             decoration: BoxDecoration(
-              color: _primaryColor.withOpacity(0.1),
+              color: _primaryColor.withValues(alpha: 0.1),
               borderRadius: BorderRadius.circular(8),
-              border: Border.all(color: _primaryColor.withOpacity(0.3)),
+              border: Border.all(color: _primaryColor.withValues(alpha: 0.3)),
             ),
             child: Row(
               children: [
@@ -536,9 +540,9 @@ class _ServicesViewState extends State<ServicesView> {
             child: Container(
               padding: const EdgeInsets.all(12),
               decoration: BoxDecoration(
-                color: Colors.orange.withOpacity(0.1),
+                color: Colors.orange.withValues(alpha: 0.1),
                 borderRadius: BorderRadius.circular(8),
-                border: Border.all(color: Colors.orange.withOpacity(0.3)),
+                border: Border.all(color: Colors.orange.withValues(alpha: 0.3)),
               ),
               child: Row(
                 children: [
@@ -580,7 +584,6 @@ class _ServicesViewState extends State<ServicesView> {
           onChanged: (bool value) {
             setState(() {
               _hasServices = value;
-              // Reset service selections when deactivating
               if (!value) {
                 _selectedServices = _selectedServices.map(
                   (key, value) => MapEntry(key, false),
@@ -588,7 +591,7 @@ class _ServicesViewState extends State<ServicesView> {
               }
             });
           },
-          activeColor: _primaryColor,
+          activeThumbColor: _primaryColor, // ← Cambiado aquí
           inactiveTrackColor: Colors.grey[600],
         ),
       ],
@@ -698,7 +701,7 @@ class _ServicesViewState extends State<ServicesView> {
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                 decoration: BoxDecoration(
-                  color: Colors.white.withOpacity(0.3),
+                  color: Colors.white.withValues(alpha: 0.3),
                   borderRadius: BorderRadius.circular(6),
                 ),
                 child: Text(

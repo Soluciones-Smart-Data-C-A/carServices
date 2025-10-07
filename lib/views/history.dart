@@ -8,10 +8,10 @@ class HistoryView extends StatefulWidget {
   const HistoryView({super.key});
 
   @override
-  _HistoryViewState createState() => _HistoryViewState();
+  HistoryViewState createState() => HistoryViewState();
 }
 
-class _HistoryViewState extends State<HistoryView> {
+class HistoryViewState extends State<HistoryView> {
   static const _backgroundColor = Colors.transparent;
   static const _primaryColor = Color(0xFF2AEFDA);
   static const _secondaryColor = Color(0xFF75A6B1);
@@ -52,15 +52,18 @@ class _HistoryViewState extends State<HistoryView> {
       margin: const EdgeInsets.symmetric(vertical: 8),
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(12),
-        side: BorderSide(color: _secondaryColor.withOpacity(0.5), width: 1),
+        side: BorderSide(
+          color: _secondaryColor.withValues(alpha: 0.5),
+          width: 1,
+        ),
       ),
-      color: Colors.black.withOpacity(0.3),
+      color: Colors.black.withValues(alpha: 0.3),
       child: ListTile(
         contentPadding: const EdgeInsets.all(16),
         leading: Container(
           padding: const EdgeInsets.all(10),
           decoration: BoxDecoration(
-            color: Colors.blue.withOpacity(0.3),
+            color: Colors.blue.withValues(alpha: 0.3),
             shape: BoxShape.circle,
           ),
           child: Icon(
