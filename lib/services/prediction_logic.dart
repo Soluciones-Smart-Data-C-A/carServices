@@ -123,65 +123,32 @@ class PredictionService {
 
     _logger.i('  avgKmPerDay: $avgKmPerDay');
 
-    // Patrones para generar los tres rangos de porcentajes
-    final List<double> highProgressPatterns = [
-      0.85,
-      0.92,
-      0.88,
-      0.95,
-      0.81,
-    ]; // 81-95%
-    final List<double> mediumProgressPatterns = [
-      0.65,
-      0.72,
-      0.58,
-      0.78,
-      0.63,
-      0.55,
-      0.69,
-      0.75,
-      0.60,
-      0.70,
-    ]; // 55-78%
-    final List<double> lowProgressPatterns = [
-      0.25,
-      0.35,
-      0.42,
-      0.18,
-      0.30,
-      0.48,
-      0.22,
-      0.38,
-    ]; // 18-48%
+    // ✅ NUEVO: Distribución específica para 5 servicios
+    // 2 servicios entre 80-100%, 2 servicios entre 50-79%, 1 servicio menos de 50%
+    final List<double> progressFactors = [
+      // 2 servicios en rango 80-100%
+      _getRandomPercentage(80, 100),
+      _getRandomPercentage(80, 100),
+      // 2 servicios en rango 50-79%
+      _getRandomPercentage(50, 79),
+      _getRandomPercentage(50, 79),
+      // 1 servicio en rango 1-49%
+      _getRandomPercentage(1, 49),
+    ];
 
-    // Distribuir servicios en los tres rangos
-    int highIndex = 0;
-    int mediumIndex = 0;
-    int lowIndex = 0;
+    // Mezclar los factores de progreso para que no siempre estén en el mismo orden
+    progressFactors.shuffle();
 
-    for (var rule in serviceRules) {
-      double progressFactor;
+    // Tomar solo los primeros 5 servicios de las reglas
+    final limitedServiceRules = serviceRules.take(5).toList();
 
-      // Distribuir servicios entre los tres rangos
-      if (highIndex < 3) {
-        // 3 servicios en rango alto (80-100%)
-        progressFactor =
-            highProgressPatterns[highIndex % highProgressPatterns.length];
-        highIndex++;
-      } else if (mediumIndex < 5) {
-        // 5 servicios en rango medio (50-79%)
-        progressFactor =
-            mediumProgressPatterns[mediumIndex % mediumProgressPatterns.length];
-        mediumIndex++;
-      } else {
-        // Resto en rango bajo (0-49%)
-        progressFactor =
-            lowProgressPatterns[lowIndex % lowProgressPatterns.length];
-        lowIndex++;
-      }
+    for (int i = 0; i < limitedServiceRules.length; i++) {
+      final rule = limitedServiceRules[i];
+      final double progressFactor = progressFactors[i];
 
+      // Calcular kilómetros recorridos basado en el porcentaje
       final int simulatedKmSinceLastService =
-          (rule.frequencyKm * progressFactor).round();
+          (rule.frequencyKm * (progressFactor / 100)).round();
 
       // Calcular kilómetros hasta el próximo servicio
       final int kmToNextService = _calculateKmToNextService(
@@ -189,7 +156,7 @@ class PredictionService {
         rule.frequencyKm,
       );
 
-      // Calcular porcentaje completado (inverso)
+      // Calcular porcentaje completado
       final double percentageCompleted = _calculatePercentageCompleted(
         simulatedKmSinceLastService,
         rule.frequencyKm,
@@ -204,6 +171,7 @@ class PredictionService {
       // DEBUG: Verificar cada servicio
       _logger.i('DEBUG - Service: ${rule.serviceName}');
       _logger.i('  frequencyKm: ${rule.frequencyKm}');
+      _logger.i('  progressFactor: ${progressFactor.round()}%');
       _logger.i('  simulatedKmSinceLastService: $simulatedKmSinceLastService');
       _logger.i('  kmToNextService: $kmToNextService');
       _logger.i('  percentageCompleted: ${percentageCompleted.round()}%');
@@ -229,8 +197,14 @@ class PredictionService {
       (a, b) => a['kmToNextService'].compareTo(b['kmToNextService']),
     );
 
-    // SOLO RETORNAR LOS 5 PRIMEROS (más próximos)
-    return predictions.take(5).toList();
+    return predictions;
+  }
+
+  // ✅ NUEVO: Generar porcentaje aleatorio dentro de un rango
+  double _getRandomPercentage(int min, int max) {
+    final random = DateTime.now().microsecondsSinceEpoch % 100;
+    final range = max - min + 1;
+    return (min + (random % range)).toDouble();
   }
 
   // Calcular kilómetros hasta el próximo servicio
@@ -243,7 +217,7 @@ class PredictionService {
     }
   }
 
-  // Calcular porcentaje completado (inverso)
+  // Calcular porcentaje completado
   double _calculatePercentageCompleted(
     int kmSinceLastService,
     int frequencyKm,

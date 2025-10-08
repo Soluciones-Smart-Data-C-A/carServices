@@ -19,15 +19,12 @@ class _SettingsViewState extends State<SettingsView> {
   static const _textColor = Colors.white;
   static const _grey300 = Color(0xFFE0E0E0);
 
-  void _changeLanguage(BuildContext context, String languageCode) {
-    // Actualización inmediata del UI
-    setState(() {});
+  final Future<List<Vehicle>> _vehiclesFuture = DatabaseService.getVehicles();
 
-    // Actualiza el locale inmediatamente
+  void _changeLanguage(BuildContext context, String languageCode) {
     Locale newLocale = Locale(languageCode);
     CarServiceApp.setLocale(context, newLocale);
 
-    // Guardar en segundo plano sin afectar el UI
     WidgetsBinding.instance.addPostFrameCallback((_) async {
       await LocaleService.saveLocale(languageCode);
     });
@@ -43,11 +40,7 @@ class _SettingsViewState extends State<SettingsView> {
         leading: IconButton(
           icon: const Icon(Icons.arrow_back_ios, color: _textColor),
           onPressed: () {
-            Navigator.pushAndRemoveUntil(
-              context,
-              MaterialPageRoute(builder: (context) => const MainScreen()),
-              (Route<dynamic> route) => false,
-            );
+            Navigator.pop(context);
           },
         ),
         title: Text(
@@ -61,7 +54,8 @@ class _SettingsViewState extends State<SettingsView> {
         centerTitle: true,
       ),
       body: FutureBuilder<List<Vehicle>>(
-        future: DatabaseService.getVehicles(),
+        future: _vehiclesFuture, // Usamos la future almacenada, no recreada
+        key: const Key('vehicles_future'), // Clave única
         builder: (context, snapshot) {
           if (snapshot.connectionState == ConnectionState.waiting) {
             return const Center(

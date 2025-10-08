@@ -1,4 +1,4 @@
-// services_details.dart (corregido)
+// services_details.dart (corregido con fondo consistente)
 import 'package:flutter/material.dart';
 import 'package:car_service_app/utils/index.dart';
 import 'package:car_service_app/services/app_localizations.dart';
@@ -87,7 +87,6 @@ class Servicesdetails extends StatelessWidget {
     );
   }
 
-  // Replica de _buildServiceInfoSection adaptada para services_details
   Widget _buildServiceInfoSection(AppLocalizations localizations) {
     final bool isDue = serviceDetails['isDue'] == true;
     final statusColor = isDue ? Colors.red.shade200 : Colors.yellow.shade200;
@@ -128,11 +127,11 @@ class Servicesdetails extends StatelessWidget {
     // Determinar color basado en el porcentaje
     Color getProgressColor() {
       if (percentage >= 80) {
-        return Colors.red.shade400; // Rojo para 80-100% (urgente)
+        return Colors.red.shade400;
       } else if (percentage >= 50) {
-        return Colors.orange.shade400; // Naranja para 50-79% (intermedio)
+        return Colors.orange.shade400;
       } else {
-        return Colors.green.shade400; // Verde para 0-49% (bajo)
+        return Colors.green.shade400;
       }
     }
 
@@ -178,7 +177,7 @@ class Servicesdetails extends StatelessWidget {
               style: TextStyle(
                 fontSize: 48,
                 fontWeight: FontWeight.bold,
-                color: progressColor, // Mismo color que el gradiente
+                color: progressColor,
               ),
             ),
           ),
@@ -191,54 +190,64 @@ class Servicesdetails extends StatelessWidget {
   Widget build(BuildContext context) {
     final localizations = AppLocalizations.of(context);
 
-    return Scaffold(
-      backgroundColor: Colors.transparent,
-      appBar: AppBar(
+    return Container(
+      // ✅ AGREGADO: Mismo gradiente que las otras pantallas
+      decoration: const BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topCenter,
+          end: Alignment.bottomCenter,
+          colors: [Color(0xFF07303D), Color(0xFF040D0F)],
+        ),
+      ),
+      child: Scaffold(
         backgroundColor: Colors.transparent,
-        elevation: 0,
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back_ios, color: Colors.white),
-          onPressed: () => Navigator.pop(context),
-        ),
-        title: Text(
-          MapUtils.getString(
-            serviceDetails,
-            'service',
-            defaultValue: localizations.serviceDetails,
+        appBar: AppBar(
+          backgroundColor: Colors.transparent,
+          elevation: 0,
+          leading: IconButton(
+            icon: const Icon(Icons.arrow_back_ios, color: Colors.white),
+            onPressed: () => Navigator.pop(context),
           ),
-          style: const TextStyle(
-            color: Colors.white,
-            fontSize: 24,
-            fontWeight: FontWeight.bold,
-          ),
-        ),
-        centerTitle: true,
-      ),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(16.0),
-        child: Column(
-          children: [
-            _buildVehicleImageWithProgress(),
-            const SizedBox(height: 20),
-            Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  localizations.serviceInformation,
-                  style: const TextStyle(
-                    fontSize: 20,
-                    fontWeight: FontWeight.bold,
-                    color: _textColor,
-                  ),
-                ),
-                const SizedBox(height: 16),
-                _buildServiceInfoSection(localizations),
-              ],
+          title: Text(
+            MapUtils.getString(
+              serviceDetails,
+              'service',
+              defaultValue: localizations.serviceDetails,
             ),
-          ],
+            style: const TextStyle(
+              color: Colors.white,
+              fontSize: 24,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+          centerTitle: true,
         ),
+        body: SingleChildScrollView(
+          padding: const EdgeInsets.all(16.0),
+          child: Column(
+            children: [
+              _buildVehicleImageWithProgress(),
+              const SizedBox(height: 20),
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    localizations.serviceInformation,
+                    style: const TextStyle(
+                      fontSize: 20,
+                      fontWeight: FontWeight.bold,
+                      color: _textColor,
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  _buildServiceInfoSection(localizations),
+                ],
+              ),
+            ],
+          ),
+        ),
+        bottomNavigationBar: _buildBottomNavigationBar(context),
       ),
-      bottomNavigationBar: _buildBottomNavigationBar(context),
     );
   }
 
@@ -281,7 +290,6 @@ class Servicesdetails extends StatelessWidget {
       return;
     }
 
-    // Ejecutar navegación primero
     switch (index) {
       case 1:
         onNavigateToServices();
@@ -294,7 +302,6 @@ class Servicesdetails extends StatelessWidget {
         break;
     }
 
-    // Luego cerrar después de un microtask, verificando mounted
     Future.microtask(() {
       if (context.mounted) {
         Navigator.pop(context);
