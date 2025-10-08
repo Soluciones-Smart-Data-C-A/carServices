@@ -266,8 +266,6 @@ class ServicesViewState extends State<ServicesView> {
     return iconMap[iconName] ?? Icons.build;
   }
 
-  // Build widgets MODIFIED
-
   Widget _buildServiceCard(Service service) {
     final iconName = _serviceIcons[service.id] ?? 'default_icon';
     final isSelected = _selectedServices[service.id] ?? false;
@@ -277,13 +275,15 @@ class ServicesViewState extends State<ServicesView> {
       child: Container(
         margin: const EdgeInsets.all(4),
         decoration: BoxDecoration(
-          color: isSelected
-              ? _primaryColor
-              : Colors.black.withValues(alpha: 0.5),
+          color: Colors.black.withOpacity(0.5), // Color de fondo siempre igual
           borderRadius: BorderRadius.circular(12),
           border: Border.all(
-            color: isSelected ? Colors.white : _secondaryColor,
-            width: 2,
+            color: isSelected
+                ? _primaryColor
+                : _secondaryColor, // Solo el borde cambia
+            width: isSelected
+                ? 3
+                : 2, // Borde más grueso cuando está seleccionado
           ),
         ),
         child: Column(
@@ -294,7 +294,7 @@ class ServicesViewState extends State<ServicesView> {
               child: Icon(
                 _getIconForService(iconName),
                 size: 32,
-                color: isSelected ? Colors.white : _textColor,
+                color: _textColor, // Color del icono siempre igual
               ),
             ),
             Padding(
@@ -303,7 +303,7 @@ class ServicesViewState extends State<ServicesView> {
                 service.serviceName,
                 textAlign: TextAlign.center,
                 style: TextStyle(
-                  color: isSelected ? Colors.white : _textColor,
+                  color: _textColor, // Color del texto siempre igual
                   fontSize: 12,
                   fontWeight: FontWeight.bold,
                 ),
