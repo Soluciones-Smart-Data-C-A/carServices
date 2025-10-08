@@ -24,6 +24,7 @@ class DatabaseService {
 
   // Database instance getter
   static Future<Database> get database async {
+    // await DatabaseService.deleteDatabase();
     if (_database != null) return _database!;
     _database = await _initializeDatabase();
     return _database!;

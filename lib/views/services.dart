@@ -275,7 +275,9 @@ class ServicesViewState extends State<ServicesView> {
       child: Container(
         margin: const EdgeInsets.all(4),
         decoration: BoxDecoration(
-          color: Colors.black.withOpacity(0.5), // Color de fondo siempre igual
+          color: Colors.black.withValues(
+            alpha: 0.5,
+          ), // Color de fondo siempre igual
           borderRadius: BorderRadius.circular(12),
           border: Border.all(
             color: isSelected

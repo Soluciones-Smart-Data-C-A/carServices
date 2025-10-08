@@ -13,6 +13,14 @@ import 'package:car_service_app/services/database_service.dart';
 import 'package:car_service_app/services/locale_service.dart';
 import 'package:car_service_app/services/location_service.dart';
 import 'package:car_service_app/services/app_localizations.dart';
+import 'package:car_service_app/services/registration_service.dart';
+
+// Importa las pantallas de registro
+import 'package:car_service_app/views/registration/splash_screen.dart';
+import 'package:car_service_app/views/registration/registration_step1.dart';
+import 'package:car_service_app/views/registration/registration_step2.dart';
+import 'package:car_service_app/views/registration/registration_step3.dart';
+import 'package:car_service_app/views/registration/registration_step4.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -41,6 +49,8 @@ class CarServiceApp extends StatefulWidget {
 
 class _CarServiceAppState extends State<CarServiceApp> {
   Locale? _locale;
+  bool _isRegistrationCompleted = false; // NUEVO: Estado de registro
+  bool _isLoading = true; // NUEVO: Estado de carga
 
   void setLocale(Locale locale) {
     setState(() {
@@ -51,16 +61,33 @@ class _CarServiceAppState extends State<CarServiceApp> {
   @override
   void initState() {
     super.initState();
-    _loadSavedLocale();
+    _initializeApp(); // MODIFICADO: Inicialización mejorada
   }
 
-  void _loadSavedLocale() async {
+  // NUEVO: Método para inicializar la app
+  void _initializeApp() async {
+    // Cargar configuración en paralelo
+    await Future.wait([_loadSavedLocale(), _checkRegistrationStatus()]);
+
+    setState(() {
+      _isLoading = false;
+    });
+  }
+
+  Future<void> _loadSavedLocale() async {
     final savedLocale = await LocaleService.getLocale();
     if (savedLocale != null) {
       setState(() {
         _locale = Locale(savedLocale);
       });
     }
+  }
+
+  Future<void> _checkRegistrationStatus() async {
+    final isCompleted = await RegistrationService.isRegistrationCompleted();
+    setState(() {
+      _isRegistrationCompleted = isCompleted;
+    });
   }
 
   @override
@@ -81,7 +108,46 @@ class _CarServiceAppState extends State<CarServiceApp> {
         GlobalWidgetsLocalizations.delegate,
         GlobalCupertinoLocalizations.delegate,
       ],
-      home: MainScreen(),
+      // MODIFICADO: Lógica condicional para home
+      home: _isLoading
+          ? _buildLoadingScreen()
+          : _isRegistrationCompleted
+          ? MainScreen()
+          : SplashScreen(),
+      routes: {
+        '/main': (context) => MainScreen(),
+        '/registration/step1': (context) => RegistrationStep1(),
+        '/registration/step2': (context) => RegistrationStep2(),
+        '/registration/step3': (context) => RegistrationStep3(
+          vehicleType: 'sedan', // Estos valores vendrán del paso anterior
+          usageType: 'personal',
+        ),
+        '/registration/step4': (context) => RegistrationStep4(
+          email: '', // Estos se pasarán desde el paso 3
+          phone: '',
+          otpCode: '',
+        ),
+      },
+    );
+  }
+
+  // NUEVO: Pantalla de carga inicial
+  Widget _buildLoadingScreen() {
+    return Scaffold(
+      body: Container(
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
+            colors: [Color(0xFF07303D), Color(0xFF040D0F)],
+          ),
+        ),
+        child: Center(
+          child: CircularProgressIndicator(
+            valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+          ),
+        ),
+      ),
     );
   }
 }
