@@ -1,6 +1,8 @@
+// registration_step3.dart - VERSIÓN CON SNACKBAR UTILS
 import 'package:flutter/material.dart';
-import 'package:car_service_app/services/database_service.dart';
 import 'package:car_service_app/models/vehicle.dart';
+import 'package:car_service_app/services/database_service.dart';
+import 'package:car_service_app/utils/index.dart';
 import 'package:car_service_app/views/registration/registration_step4.dart';
 
 class RegistrationStep3 extends StatefulWidget {
@@ -69,9 +71,8 @@ class _RegistrationStep3State extends State<RegistrationStep3> {
         final initialMileage =
             int.tryParse(_initialMileageController.text) ?? 0;
 
-        // CORREGIDO: Crear vehículo sin ID para que se autoincremente
+        // Crear vehículo sin ID para que se autoincremente
         final vehicle = Vehicle(
-          // id: null, // NO PASAR EL ID - se autoincrementará automáticamente
           make: _getVehicleTypeName(),
           model: _getUsageTypeName(),
           initialMileage: initialMileage,
@@ -108,33 +109,23 @@ class _RegistrationStep3State extends State<RegistrationStep3> {
           setState(() {
             _isLoading = false;
           });
-          _showErrorDialog('Error al registrar: $e');
+          SnackBarUtils.showError(
+            // REEMPLAZADO
+            context: context,
+            message: 'Error al registrar: $e',
+          );
         }
       }
     }
   }
 
-  void _showErrorDialog(String message) {
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        backgroundColor: Color(0xFF10162A),
-        title: Text('Error', style: TextStyle(color: Colors.white)),
-        content: Text(message, style: TextStyle(color: Colors.white70)),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: Text('OK', style: TextStyle(color: Color(0xFF2AEFDA))),
-          ),
-        ],
-      ),
-    );
-  }
+  // ELIMINADO: _showErrorDialog ya no es necesario
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: const Color(0xFF0A0F1F),
+      resizeToAvoidBottomInset: true,
       body: SafeArea(
         child: Padding(
           padding: const EdgeInsets.all(24),
@@ -143,45 +134,45 @@ class _RegistrationStep3State extends State<RegistrationStep3> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                // Header
+                // Header COMPACTO
                 Row(
                   children: [
                     IconButton(
                       icon: const Icon(Icons.arrow_back, color: Colors.white),
                       onPressed: () => Navigator.pop(context),
                     ),
-                    const SizedBox(width: 16),
+                    const SizedBox(width: 8),
                     const Text(
                       'Paso 3 de 4',
-                      style: TextStyle(color: Colors.white70, fontSize: 16),
+                      style: TextStyle(color: Colors.white70, fontSize: 14),
                     ),
                   ],
                 ),
-                const SizedBox(height: 32),
+                const SizedBox(height: 20),
 
-                // Título
+                // Título COMPACTO
                 const Text(
                   'Crear tu Cuenta',
                   style: TextStyle(
-                    fontSize: 28,
+                    fontSize: 24,
                     fontWeight: FontWeight.bold,
                     color: Colors.white,
                   ),
                 ),
-                const SizedBox(height: 8),
+                const SizedBox(height: 4),
                 const Text(
                   'Completa tus datos para finalizar el registro',
-                  style: TextStyle(color: Colors.white70, fontSize: 16),
+                  style: TextStyle(color: Colors.white70, fontSize: 14),
                 ),
-                const SizedBox(height: 24),
+                const SizedBox(height: 16),
 
-                // Resumen de selección anterior
+                // Resumen de selección anterior COMPACTO
                 Container(
                   width: double.infinity,
-                  padding: const EdgeInsets.all(16),
+                  padding: const EdgeInsets.all(12),
                   decoration: BoxDecoration(
                     color: Colors.black.withValues(alpha: 0.3),
-                    borderRadius: BorderRadius.circular(12),
+                    borderRadius: BorderRadius.circular(8),
                     border: Border.all(
                       color: const Color(0xFF2AEFDA),
                       width: 1,
@@ -192,9 +183,9 @@ class _RegistrationStep3State extends State<RegistrationStep3> {
                       const Icon(
                         Icons.directions_car,
                         color: Color(0xFF2AEFDA),
-                        size: 24,
+                        size: 20,
                       ),
-                      const SizedBox(width: 12),
+                      const SizedBox(width: 8),
                       Expanded(
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
@@ -204,13 +195,14 @@ class _RegistrationStep3State extends State<RegistrationStep3> {
                               style: const TextStyle(
                                 color: Colors.white,
                                 fontWeight: FontWeight.w600,
+                                fontSize: 14,
                               ),
                             ),
                             Text(
                               _getUsageTypeName(),
                               style: const TextStyle(
                                 color: Colors.white70,
-                                fontSize: 14,
+                                fontSize: 12,
                               ),
                             ),
                           ],
@@ -219,11 +211,12 @@ class _RegistrationStep3State extends State<RegistrationStep3> {
                     ],
                   ),
                 ),
-                const SizedBox(height: 32),
+                const SizedBox(height: 20),
 
-                // Campos del formulario
+                // Campos del formulario CON SCROLL
                 Expanded(
                   child: SingleChildScrollView(
+                    physics: const BouncingScrollPhysics(),
                     child: Column(
                       children: [
                         // Campo de kilometraje inicial
@@ -250,7 +243,7 @@ class _RegistrationStep3State extends State<RegistrationStep3> {
                             return null;
                           },
                         ),
-                        const SizedBox(height: 16),
+                        const SizedBox(height: 12),
 
                         _buildTextField(
                           controller: _emailController,
@@ -268,7 +261,7 @@ class _RegistrationStep3State extends State<RegistrationStep3> {
                             return null;
                           },
                         ),
-                        const SizedBox(height: 16),
+                        const SizedBox(height: 12),
 
                         _buildTextField(
                           controller: _phoneController,
@@ -286,7 +279,7 @@ class _RegistrationStep3State extends State<RegistrationStep3> {
                             return null;
                           },
                         ),
-                        const SizedBox(height: 16),
+                        const SizedBox(height: 12),
 
                         _buildTextField(
                           controller: _usernameController,
@@ -303,7 +296,7 @@ class _RegistrationStep3State extends State<RegistrationStep3> {
                             return null;
                           },
                         ),
-                        const SizedBox(height: 16),
+                        const SizedBox(height: 12),
 
                         _buildTextField(
                           controller: _passwordController,
@@ -334,7 +327,7 @@ class _RegistrationStep3State extends State<RegistrationStep3> {
                             return null;
                           },
                         ),
-                        const SizedBox(height: 16),
+                        const SizedBox(height: 12),
 
                         _buildTextField(
                           controller: _confirmPasswordController,
@@ -366,14 +359,13 @@ class _RegistrationStep3State extends State<RegistrationStep3> {
                             return null;
                           },
                         ),
+                        const SizedBox(height: 20),
                       ],
                     ),
                   ),
                 ),
 
-                const SizedBox(height: 24),
-
-                // Botón de registro
+                // Botón de registro - SIEMPRE VISIBLE
                 SizedBox(
                   width: double.infinity,
                   child: ElevatedButton(
@@ -400,7 +392,7 @@ class _RegistrationStep3State extends State<RegistrationStep3> {
                         : const Text(
                             'Registrar y Verificar',
                             style: TextStyle(
-                              fontSize: 18,
+                              fontSize: 16,
                               fontWeight: FontWeight.bold,
                             ),
                           ),
@@ -431,45 +423,50 @@ class _RegistrationStep3State extends State<RegistrationStep3> {
           label,
           style: const TextStyle(
             color: Colors.white,
-            fontSize: 16,
+            fontSize: 14,
             fontWeight: FontWeight.w500,
           ),
         ),
-        const SizedBox(height: 8),
+        const SizedBox(height: 6),
         TextFormField(
           controller: controller,
           keyboardType: keyboardType,
           obscureText: obscureText,
-          style: const TextStyle(color: Colors.white),
+          style: const TextStyle(color: Colors.white, fontSize: 14),
           decoration: InputDecoration(
             hintText: hintText,
-            hintStyle: const TextStyle(color: Colors.white54),
-            prefixIcon: Icon(prefixIcon, color: const Color(0xFF75A6B1)),
+            hintStyle: const TextStyle(color: Colors.white54, fontSize: 14),
+            prefixIcon: Icon(
+              prefixIcon,
+              color: const Color(0xFF75A6B1),
+              size: 20,
+            ),
             suffixIcon: suffixIcon,
             border: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(12),
+              borderRadius: BorderRadius.circular(8),
               borderSide: const BorderSide(color: Color(0xFF75A6B1)),
             ),
             enabledBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(12),
+              borderRadius: BorderRadius.circular(8),
               borderSide: const BorderSide(color: Color(0xFF75A6B1)),
             ),
             focusedBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(12),
+              borderRadius: BorderRadius.circular(8),
               borderSide: const BorderSide(color: Color(0xFF2AEFDA)),
             ),
             errorBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(12),
+              borderRadius: BorderRadius.circular(8),
               borderSide: const BorderSide(color: Colors.red),
             ),
             focusedErrorBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(12),
+              borderRadius: BorderRadius.circular(8),
               borderSide: const BorderSide(color: Colors.red),
             ),
             contentPadding: const EdgeInsets.symmetric(
-              horizontal: 16,
-              vertical: 14,
+              horizontal: 12,
+              vertical: 12,
             ),
+            isDense: true,
           ),
           validator: validator,
         ),

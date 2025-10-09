@@ -1,6 +1,7 @@
-// registration_step4.dart
+// registration_step4.dart - VERSIÓN CON SNACKBAR UTILS
 import 'package:flutter/material.dart';
-import 'package:car_service_app/services/registration_service.dart';
+import 'package:car_service_app/main.dart';
+import 'package:car_service_app/utils/index.dart'; // NUEVO IMPORT
 
 class RegistrationStep4 extends StatefulWidget {
   final String email;
@@ -31,7 +32,8 @@ class _RegistrationStep4State extends State<RegistrationStep4> {
   bool _isResending = false;
   int _resendCountdown = 60;
   late String _currentOtp;
-  bool _autoFilled = false; // NUEVO: Control para autocompletado
+  bool _autoFilled = false;
+  bool _isOtpComplete = false;
 
   @override
   void initState() {
@@ -39,63 +41,50 @@ class _RegistrationStep4State extends State<RegistrationStep4> {
     _currentOtp = widget.otpCode;
     _setupOtpListeners();
     _startResendCountdown();
-    _autoFillOTP(); // NUEVO: Autocompletar OTP después de un delay
+    _autoFillOTP();
   }
 
-  // NUEVO: Método para autocompletar el OTP después de un delay
   void _autoFillOTP() async {
-    await Future.delayed(Duration(seconds: 3)); // Esperar 3 segundos
-
-    if (mounted && !_autoFilled) {
+    await Future.delayed(const Duration(milliseconds: 500));
+    if (mounted) {
+      for (
+        int i = 0;
+        i < _otpControllers.length && i < _currentOtp.length;
+        i++
+      ) {
+        _otpControllers[i].text = _currentOtp[i];
+      }
       setState(() {
         _autoFilled = true;
       });
-
-      // Autocompletar los campos OTP
-      for (int i = 0; i < _currentOtp.length; i++) {
-        _otpControllers[i].text = _currentOtp[i];
-      }
-
-      // Mover foco al último campo
-      if (_otpFocusNodes.length > 5) {
-        _otpFocusNodes[5].requestFocus();
-      }
-
-      // Mostrar mensaje informativo
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          backgroundColor: Color(0xFF2AEFDA),
-          content: Text(
-            'Código OTP completado automáticamente para demo',
-            style: TextStyle(color: Colors.black),
-          ),
-          duration: Duration(seconds: 3),
-        ),
-      );
+      _checkOtpCompletion();
     }
   }
 
   void _setupOtpListeners() {
     for (int i = 0; i < _otpControllers.length; i++) {
       _otpControllers[i].addListener(() {
-        if (_otpControllers[i].text.length == 1 && i < 5) {
+        final text = _otpControllers[i].text;
+        if (text.length == 1 && i < _otpControllers.length - 1) {
           _otpFocusNodes[i + 1].requestFocus();
+        } else if (text.isEmpty && i > 0) {
+          Future.microtask(() => _otpFocusNodes[i - 1].requestFocus());
         }
-      });
-
-      _otpFocusNodes[i].addListener(() {
-        if (_otpFocusNodes[i].hasFocus) {
-          _otpControllers[i].selection = TextSelection(
-            baseOffset: 0,
-            extentOffset: _otpControllers[i].text.length,
-          );
-        }
+        _checkOtpCompletion();
       });
     }
   }
 
+  void _checkOtpCompletion() {
+    final fullOtp = _otpControllers.map((c) => c.text).join();
+    setState(() {
+      _isOtpComplete = fullOtp.length == 6;
+    });
+  }
+
   void _startResendCountdown() {
-    Future.delayed(Duration(seconds: 1), () {
+    // Implementación de cuenta regresiva
+    Future.delayed(const Duration(seconds: 1), () {
       if (mounted && _resendCountdown > 0) {
         setState(() {
           _resendCountdown--;
@@ -105,122 +94,155 @@ class _RegistrationStep4State extends State<RegistrationStep4> {
     });
   }
 
-  void _resendOTP() async {
-    if (_resendCountdown > 0) return;
+  // ELIMINADO: _showSnackBar ya no es necesario
 
-    setState(() {
-      _isResending = true;
-      _autoFilled = false; // Resetear autocompletado
-    });
-
-    // Simular reenvío de OTP
-    await Future.delayed(Duration(seconds: 2));
-
-    // Generar nuevo OTP
-    final newOtp = (100000 + DateTime.now().millisecondsSinceEpoch % 900000)
-        .toString();
-
-    setState(() {
-      _currentOtp = newOtp;
-      _isResending = false;
-      _resendCountdown = 60;
-    });
-
-    _startResendCountdown();
-
-    // Limpiar campos OTP
-    for (final controller in _otpControllers) {
-      controller.clear();
-    }
-    _otpFocusNodes[0].requestFocus();
-
-    // Programar nuevo autocompletado
-    _autoFillOTP();
-
-    // Mostrar mensaje de éxito
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        backgroundColor: Color(0xFF2AEFDA),
-        content: Text(
-          'Nuevo código enviado',
-          style: TextStyle(color: Colors.black),
-        ),
-        duration: Duration(seconds: 3),
-      ),
-    );
-  }
-
-  void _verifyOTP() async {
-    final enteredOtp = _otpControllers
-        .map((controller) => controller.text)
-        .join();
-
-    if (enteredOtp.length != 6) {
-      _showErrorDialog('Por favor ingresa el código completo de 6 dígitos');
-      return;
-    }
+  Future<void> _verifyOTP() async {
+    if (!_isOtpComplete || _isLoading) return;
 
     setState(() {
       _isLoading = true;
     });
 
-    // Simular verificación
-    await Future.delayed(Duration(seconds: 2));
+    final enteredOtp = _otpControllers.map((c) => c.text).join();
+
+    await Future.delayed(const Duration(seconds: 2));
+
+    if (!mounted) return;
 
     if (enteredOtp == _currentOtp) {
-      // OTP correcto - completar registro
-      await RegistrationService.setRegistrationCompleted(true);
+      SnackBarUtils.showSuccess(
+        // REEMPLAZADO
+        context: context,
+        message: 'Verificación exitosa. Registro completado!',
+      );
+
+      // Navegar a MainScreen después de un breve delay
+      await Future.delayed(const Duration(milliseconds: 1500));
 
       if (mounted) {
-        Navigator.pushNamedAndRemoveUntil(context, '/main', (route) => false);
+        Navigator.pushAndRemoveUntil(
+          context,
+          MaterialPageRoute(builder: (context) => const MainScreen()),
+          (route) => false,
+        );
       }
     } else {
+      SnackBarUtils.showError(
+        // REEMPLAZADO
+        context: context,
+        message: 'Código OTP incorrecto. Inténtalo de nuevo.',
+      );
       setState(() {
         _isLoading = false;
       });
-      _showErrorDialog(
-        'Código incorrecto. Por favor verifica e intenta nuevamente.',
-      );
     }
   }
 
-  void _showErrorDialog(String message) {
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        backgroundColor: Color(0xFF10162A),
-        title: Text(
-          'Error de Verificación',
-          style: TextStyle(color: Colors.white),
+  Widget _buildOtpField(int index) {
+    return SizedBox(
+      width: 48,
+      child: TextFormField(
+        controller: _otpControllers[index],
+        focusNode: _otpFocusNodes[index],
+        keyboardType: TextInputType.number,
+        textAlign: TextAlign.center,
+        maxLength: 1,
+        style: const TextStyle(
+          color: Colors.white,
+          fontSize: 20,
+          fontWeight: FontWeight.bold,
         ),
-        content: Text(message, style: TextStyle(color: Colors.white70)),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: Text('OK', style: TextStyle(color: Color(0xFF2AEFDA))),
+        decoration: InputDecoration(
+          counterText: '',
+          filled: true,
+          fillColor: const Color(0xFF1B2232),
+          border: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(10),
+            borderSide: const BorderSide(color: Color(0xFF75A6B1)),
           ),
-        ],
+          enabledBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(10),
+            borderSide: const BorderSide(color: Color(0xFF75A6B1)),
+          ),
+          focusedBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(10),
+            borderSide: const BorderSide(color: Color(0xFF2AEFDA), width: 2),
+          ),
+        ),
       ),
     );
   }
 
-  String _getMaskedEmail() {
-    final parts = widget.email.split('@');
-    if (parts.length != 2) return widget.email;
+  Widget _buildResendButton() {
+    final canResend = _resendCountdown == 0 && !_isResending;
+    return TextButton(
+      onPressed: canResend
+          ? () async {
+              setState(() {
+                _isResending = true;
+                _resendCountdown = 60;
+              });
 
-    final username = parts[0];
-    final domain = parts[1];
+              await Future.delayed(const Duration(seconds: 2));
 
-    if (username.length <= 2) {
-      return '${username[0]}***@$domain';
-    }
+              if (!mounted) return;
 
-    return '${username.substring(0, 2)}***@$domain';
+              setState(() {
+                _isResending = false;
+              });
+              _startResendCountdown();
+              SnackBarUtils.showSuccess(
+                // REEMPLAZADO
+                context: context,
+                message: 'Nuevo código OTP enviado a ${widget.email}',
+              );
+            }
+          : null,
+      child: Text(
+        canResend
+            ? 'Reenviar Código'
+            : _isResending
+            ? 'Enviando...'
+            : 'Reenviar en ${_resendCountdown}s',
+        style: TextStyle(
+          color: canResend ? const Color(0xFF2AEFDA) : Colors.white54,
+          fontSize: 14,
+          fontWeight: FontWeight.bold,
+        ),
+      ),
+    );
   }
 
-  String _getMaskedPhone() {
-    if (widget.phone.length <= 4) return widget.phone;
-    return '***${widget.phone.substring(widget.phone.length - 4)}';
+  Widget _buildVerifyButton() {
+    return Container(
+      margin: const EdgeInsets.only(top: 32, bottom: 24),
+      width: double.infinity,
+      child: ElevatedButton(
+        onPressed: _isOtpComplete && !_isLoading ? _verifyOTP : null,
+        style: ElevatedButton.styleFrom(
+          backgroundColor: const Color(0xFF2AEFDA),
+          foregroundColor: Colors.black,
+          padding: const EdgeInsets.symmetric(vertical: 16),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(10),
+          ),
+          elevation: 2,
+        ),
+        child: _isLoading
+            ? const SizedBox(
+                width: 20,
+                height: 20,
+                child: CircularProgressIndicator(
+                  strokeWidth: 2,
+                  valueColor: AlwaysStoppedAnimation<Color>(Colors.black),
+                ),
+              )
+            : const Text(
+                'Verificar y Completar',
+                style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+              ),
+      ),
+    );
   }
 
   @override
@@ -228,7 +250,7 @@ class _RegistrationStep4State extends State<RegistrationStep4> {
     return Scaffold(
       backgroundColor: const Color(0xFF0A0F1F),
       body: SafeArea(
-        child: Padding(
+        child: SingleChildScrollView(
           padding: const EdgeInsets.all(24),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -249,183 +271,41 @@ class _RegistrationStep4State extends State<RegistrationStep4> {
               ),
               const SizedBox(height: 32),
 
-              // Título
+              // Título y Descripción
               const Text(
-                'Verifica tu Cuenta',
+                'Verificación de Código OTP',
                 style: TextStyle(
-                  fontSize: 28,
+                  fontSize: 24,
                   fontWeight: FontWeight.bold,
                   color: Colors.white,
+                  height: 1.2,
                 ),
               ),
               const SizedBox(height: 8),
-              const Text(
-                'Ingresa el código de 6 dígitos que enviamos a:',
-                style: TextStyle(color: Colors.white70, fontSize: 16),
+              Text(
+                'Hemos enviado un código de 6 dígitos a su correo ${widget.email}. Ingréselo a continuación para continuar.',
+                style: const TextStyle(color: Colors.white70, fontSize: 16),
               ),
-              const SizedBox(height: 16),
-
-              // Información de contacto
-              Container(
-                width: double.infinity,
-                padding: const EdgeInsets.all(16),
-                decoration: BoxDecoration(
-                  color: Colors.black.withValues(alpha: 0.3),
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
-                      children: [
-                        Icon(Icons.email, color: Color(0xFF2AEFDA), size: 16),
-                        SizedBox(width: 8),
-                        Text(
-                          _getMaskedEmail(),
-                          style: TextStyle(color: Colors.white),
-                        ),
-                      ],
-                    ),
-                    SizedBox(height: 8),
-                    Row(
-                      children: [
-                        Icon(Icons.phone, color: Color(0xFF2AEFDA), size: 16),
-                        SizedBox(width: 8),
-                        Text(
-                          _getMaskedPhone(),
-                          style: TextStyle(color: Colors.white),
-                        ),
-                      ],
-                    ),
-                    // NUEVO: Indicador de autocompletado
-                    if (!_autoFilled) ...[
-                      SizedBox(height: 8),
-                      Row(
-                        children: [
-                          Icon(
-                            Icons.info_outline,
-                            color: Color(0xFF2AEFDA),
-                            size: 16,
-                          ),
-                          SizedBox(width: 8),
-                          Text(
-                            'El código se completará automáticamente en breve...',
-                            style: TextStyle(
-                              color: Colors.white70,
-                              fontSize: 12,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ],
-                  ],
-                ),
-              ),
-              const SizedBox(height: 32),
+              const SizedBox(height: 48),
 
               // Campos OTP
-              Center(
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: List.generate(6, (index) {
-                    return SizedBox(
-                      width: 50,
-                      child: TextField(
-                        controller: _otpControllers[index],
-                        focusNode: _otpFocusNodes[index],
-                        textAlign: TextAlign.center,
-                        keyboardType: TextInputType.number,
-                        maxLength: 1,
-                        style: const TextStyle(
-                          color: Colors.white,
-                          fontSize: 20,
-                          fontWeight: FontWeight.bold,
-                        ),
-                        decoration: InputDecoration(
-                          counterText: '',
-                          filled: true,
-                          fillColor: Color(0xFF10162A),
-                          border: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(12),
-                            borderSide: BorderSide(color: Color(0xFF75A6B1)),
-                          ),
-                          enabledBorder: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(12),
-                            borderSide: BorderSide(color: Color(0xFF75A6B1)),
-                          ),
-                          focusedBorder: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(12),
-                            borderSide: BorderSide(color: Color(0xFF2AEFDA)),
-                          ),
-                        ),
-                        onChanged: (value) {
-                          if (value.length == 1 && index < 5) {
-                            _otpFocusNodes[index + 1].requestFocus();
-                          } else if (value.isEmpty && index > 0) {
-                            _otpFocusNodes[index - 1].requestFocus();
-                          }
-                        },
-                      ),
-                    );
-                  }),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: List.generate(
+                  _otpControllers.length,
+                  (index) => _buildOtpField(index),
                 ),
               ),
               const SizedBox(height: 24),
 
               // Botón de reenviar
-              Center(
-                child: _isResending
-                    ? CircularProgressIndicator(color: Color(0xFF2AEFDA))
-                    : TextButton(
-                        onPressed: _resendCountdown > 0 ? null : _resendOTP,
-                        child: Text(
-                          _resendCountdown > 0
-                              ? 'Reenviar código en $_resendCountdown segundos'
-                              : 'Reenviar código',
-                          style: TextStyle(
-                            color: _resendCountdown > 0
-                                ? Colors.white54
-                                : Color(0xFF2AEFDA),
-                          ),
-                        ),
-                      ),
-              ),
+              Center(child: _buildResendButton()),
 
-              const Spacer(),
+              // Botón de verificar - AHORA DENTRO DEL CONTENIDO
+              _buildVerifyButton(),
 
-              // Botón de verificación
-              SizedBox(
-                width: double.infinity,
-                child: ElevatedButton(
-                  onPressed: _isLoading ? null : _verifyOTP,
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFF2AEFDA),
-                    foregroundColor: Colors.black,
-                    padding: const EdgeInsets.symmetric(vertical: 16),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                  ),
-                  child: _isLoading
-                      ? const SizedBox(
-                          width: 20,
-                          height: 20,
-                          child: CircularProgressIndicator(
-                            strokeWidth: 2,
-                            valueColor: AlwaysStoppedAnimation<Color>(
-                              Colors.black,
-                            ),
-                          ),
-                        )
-                      : const Text(
-                          'Verificar y Completar',
-                          style: TextStyle(
-                            fontSize: 18,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                ),
-              ),
+              // Espacio adicional para evitar que el teclado cubra el contenido
+              const SizedBox(height: 20),
             ],
           ),
         ),

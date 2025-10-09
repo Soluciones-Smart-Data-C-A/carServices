@@ -1,3 +1,4 @@
+// registration_step1.dart - VERSIÓN CORREGIDA
 import 'package:flutter/material.dart';
 import 'package:car_service_app/views/registration/registration_step2.dart';
 
@@ -23,18 +24,18 @@ class RegistrationStep1 extends StatelessWidget {
                   ),
                   const SizedBox(width: 16),
                   const Text(
-                    'Paso 1 de 3',
+                    'Paso 1 de 4',
                     style: TextStyle(color: Colors.white70, fontSize: 16),
                   ),
                 ],
               ),
-              const SizedBox(height: 40),
+              const SizedBox(height: 32),
 
               // Título
               const Text(
                 'Bienvenido a\nCar Service Pro',
                 style: TextStyle(
-                  fontSize: 32,
+                  fontSize: 28,
                   fontWeight: FontWeight.bold,
                   color: Colors.white,
                   height: 1.2,
@@ -42,31 +43,40 @@ class RegistrationStep1 extends StatelessWidget {
               ),
               const SizedBox(height: 24),
 
-              // Características
-              _buildFeatureItem(
-                Icons.speed,
-                'Seguimiento de Kilometraje',
-                'Registro automático de distancia recorrida',
-              ),
-              _buildFeatureItem(
-                Icons.notifications,
-                'Recordatorios Inteligentes',
-                'Alertas para mantenimiento y servicios',
-              ),
-              _buildFeatureItem(
-                Icons.analytics,
-                'Historial Completo',
-                'Registro detallado de todos los servicios',
-              ),
-              _buildFeatureItem(
-                Icons.location_on,
-                'Ubicación en Tiempo Real',
-                'Seguimiento de viajes y distancias',
+              // Características - CON ALTURA FLEXIBLE
+              Expanded(
+                child: SingleChildScrollView(
+                  child: Column(
+                    children: [
+                      _buildFeatureItem(
+                        Icons.speed,
+                        'Seguimiento de Kilometraje',
+                        'Registro automático de distancia recorrida',
+                      ),
+                      _buildFeatureItem(
+                        Icons.notifications,
+                        'Recordatorios Inteligentes',
+                        'Alertas para mantenimiento y servicios',
+                      ),
+                      _buildFeatureItem(
+                        Icons.analytics,
+                        'Historial Completo',
+                        'Registro detallado de todos los servicios',
+                      ),
+                      _buildFeatureItem(
+                        Icons.location_on,
+                        'Ubicación en Tiempo Real',
+                        'Seguimiento de viajes y distancias',
+                      ),
+                      const SizedBox(height: 20), // Espacio extra al final
+                    ],
+                  ),
+                ),
               ),
 
-              const Spacer(),
+              const SizedBox(height: 16),
 
-              // Botón continuar
+              // Botón continuar - AHORA SIEMPRE VISIBLE
               SizedBox(
                 width: double.infinity,
                 child: ElevatedButton(
@@ -85,6 +95,7 @@ class RegistrationStep1 extends StatelessWidget {
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(12),
                     ),
+                    elevation: 2,
                   ),
                   child: const Text(
                     'Comenzar Registro',
@@ -101,7 +112,7 @@ class RegistrationStep1 extends StatelessWidget {
 
   Widget _buildFeatureItem(IconData icon, String title, String description) {
     return Container(
-      margin: const EdgeInsets.only(bottom: 20),
+      margin: const EdgeInsets.only(bottom: 16),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -123,7 +134,7 @@ class RegistrationStep1 extends StatelessWidget {
                   title,
                   style: const TextStyle(
                     color: Colors.white,
-                    fontSize: 18,
+                    fontSize: 16,
                     fontWeight: FontWeight.w600,
                   ),
                 ),
