@@ -16,11 +16,11 @@ import 'package:car_service_app/services/app_localizations.dart';
 import 'package:car_service_app/services/registration_service.dart';
 
 // Importa las pantallas de registro
-import 'package:car_service_app/views/registration/splash_screen.dart';
-import 'package:car_service_app/views/registration/registration_step1.dart';
-import 'package:car_service_app/views/registration/registration_step2.dart';
-import 'package:car_service_app/views/registration/registration_step3.dart';
-import 'package:car_service_app/views/registration/registration_step4.dart';
+import 'package:car_service_app/views/signup/splash_screen.dart';
+import 'package:car_service_app/views/signup/registration_step1.dart';
+import 'package:car_service_app/views/signup/registration_step2.dart';
+import 'package:car_service_app/views/signup/registration_step3.dart';
+import 'package:car_service_app/views/signup/registration_step4.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();

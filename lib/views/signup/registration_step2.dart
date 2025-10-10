@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:car_service_app/views/registration/registration_step3.dart';
+import 'package:car_service_app/views/signup/registration_step3.dart';
 
 class RegistrationStep2 extends StatefulWidget {
   const RegistrationStep2({super.key});

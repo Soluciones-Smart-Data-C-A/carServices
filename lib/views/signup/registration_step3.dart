@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:car_service_app/models/vehicle.dart';
 import 'package:car_service_app/services/database_service.dart';
 import 'package:car_service_app/utils/index.dart';
-import 'package:car_service_app/views/registration/registration_step4.dart';
+import 'package:car_service_app/views/signup/registration_step4.dart';
 
 class RegistrationStep3 extends StatefulWidget {
   final String vehicleType;

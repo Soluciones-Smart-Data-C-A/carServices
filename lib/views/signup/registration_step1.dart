@@ -1,6 +1,6 @@
 // registration_step1.dart - VERSIÓN CORREGIDA
 import 'package:flutter/material.dart';
-import 'package:car_service_app/views/registration/registration_step2.dart';
+import 'package:car_service_app/views/signup/registration_step2.dart';
 
 class RegistrationStep1 extends StatelessWidget {
   const RegistrationStep1({super.key});
