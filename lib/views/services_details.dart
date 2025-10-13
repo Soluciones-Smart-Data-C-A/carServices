@@ -1,4 +1,4 @@
-// services_details.dart (corregido con fondo consistente)
+// services_details.dart (corregido con fondo consistente y botón "Marcar como Realizado")
 import 'package:flutter/material.dart';
 import 'package:car_service_app/utils/index.dart';
 import 'package:car_service_app/services/app_localizations.dart';
@@ -8,6 +8,7 @@ class Servicesdetails extends StatelessWidget {
   final VoidCallback onNavigateToServices;
   final VoidCallback onNavigateToHistory;
   final VoidCallback onNavigateToSettings;
+  final Function(String, int) onNavigateToServicesWithData; // Nuevo callback
 
   const Servicesdetails({
     super.key,
@@ -15,6 +16,7 @@ class Servicesdetails extends StatelessWidget {
     required this.onNavigateToServices,
     required this.onNavigateToHistory,
     required this.onNavigateToSettings,
+    required this.onNavigateToServicesWithData, // Nuevo parámetro
   });
 
   // Constants
@@ -114,6 +116,57 @@ class Servicesdetails extends StatelessWidget {
         ),
       ],
     );
+  }
+
+  // NUEVO MÉTODO: Botón "Marcar como Realizado"
+  Widget _buildMarkAsDoneButton(AppLocalizations localizations) {
+    return Container(
+      width: double.infinity,
+      margin: const EdgeInsets.only(top: 20),
+      child: ElevatedButton(
+        onPressed: _markServiceAsDone,
+        style: ElevatedButton.styleFrom(
+          backgroundColor: _primaryColor,
+          padding: const EdgeInsets.symmetric(vertical: 16),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
+          ),
+        ),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            const Icon(Icons.check_circle_outline, size: 20),
+            const SizedBox(width: 8),
+            Text(
+              localizations.markAsDone,
+              style: const TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.bold,
+                color: Colors.white,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  // NUEVO MÉTODO: Lógica para marcar servicio como realizado
+  void _markServiceAsDone() {
+    // Obtener el nombre y ID del servicio desde serviceDetails
+    final serviceName = MapUtils.getString(
+      serviceDetails,
+      'service',
+      defaultValue: 'Servicio',
+    );
+    final serviceId = MapUtils.getInt(
+      serviceDetails,
+      'serviceId',
+      defaultValue: 0,
+    );
+
+    // Navegar a la pantalla de servicios con los datos prellenados
+    onNavigateToServicesWithData(serviceName, serviceId);
   }
 
   Widget _buildVehicleImageWithProgress() {
@@ -241,6 +294,9 @@ class Servicesdetails extends StatelessWidget {
                   ),
                   const SizedBox(height: 16),
                   _buildServiceInfoSection(localizations),
+                  _buildMarkAsDoneButton(
+                    localizations,
+                  ), // ✅ BOTÓN AGREGADO AQUÍ
                 ],
               ),
             ],

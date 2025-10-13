@@ -7,6 +7,7 @@ import 'package:car_service_app/services/database_service.dart';
 import 'package:car_service_app/services/prediction_logic.dart';
 import 'package:car_service_app/utils/index.dart';
 import 'package:car_service_app/views/services_details.dart';
+import 'package:car_service_app/views/services.dart'; // Asegúrate de importar ServicesView
 
 class DashboardView extends StatefulWidget {
   final VoidCallback onNavigateToServices;
@@ -75,6 +76,19 @@ class _DashboardViewState extends State<DashboardView> {
       _logger.i('Error loading current vehicle: $e');
       return null;
     }
+  }
+
+  // ============ NUEVOS MÉTODOS DE NAVEGACIÓN ============
+  void _navigateToServicesWithData(String serviceName, int serviceId) {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => ServicesView(),
+        settings: RouteSettings(
+          arguments: {'serviceName': serviceName, 'serviceId': serviceId},
+        ),
+      ),
+    );
   }
 
   @override
@@ -404,6 +418,7 @@ class _DashboardViewState extends State<DashboardView> {
                 onNavigateToServices: widget.onNavigateToServices,
                 onNavigateToHistory: widget.onNavigateToHistory,
                 onNavigateToSettings: widget.onNavigateToSettings,
+                onNavigateToServicesWithData: _navigateToServicesWithData,
               ),
             ),
           );
