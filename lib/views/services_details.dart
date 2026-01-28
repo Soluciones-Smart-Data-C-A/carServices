@@ -1,14 +1,17 @@
-// services_details.dart (corregido con fondo consistente y botón "Marcar como Realizado")
+// services_details.dart - Corrección del método _markServiceAsDone
 import 'package:flutter/material.dart';
 import 'package:car_service_app/utils/index.dart';
 import 'package:car_service_app/services/app_localizations.dart';
+// Añade esta importación
+import 'package:car_service_app/views/services.dart';
 
 class Servicesdetails extends StatelessWidget {
   final Map<String, dynamic> serviceDetails;
   final VoidCallback onNavigateToServices;
   final VoidCallback onNavigateToHistory;
   final VoidCallback onNavigateToSettings;
-  final Function(String, int) onNavigateToServicesWithData; // Nuevo callback
+  final Function(String, int)
+  onNavigateToServicesWithData; // Callback para pasar datos específicos
 
   const Servicesdetails({
     super.key,
@@ -16,7 +19,7 @@ class Servicesdetails extends StatelessWidget {
     required this.onNavigateToServices,
     required this.onNavigateToHistory,
     required this.onNavigateToSettings,
-    required this.onNavigateToServicesWithData, // Nuevo parámetro
+    required this.onNavigateToServicesWithData, // Parámetro requerido
   });
 
   // Constants
@@ -118,13 +121,36 @@ class Servicesdetails extends StatelessWidget {
     );
   }
 
-  // NUEVO MÉTODO: Botón "Marcar como Realizado"
-  Widget _buildMarkAsDoneButton(AppLocalizations localizations) {
+  Widget _buildMarkAsDoneButton(
+    BuildContext context,
+    AppLocalizations localizations,
+  ) {
     return Container(
       width: double.infinity,
       margin: const EdgeInsets.only(top: 20),
       child: ElevatedButton(
-        onPressed: _markServiceAsDone,
+        onPressed: () {
+          // Extraer datos del servicio
+          final serviceName = MapUtils.getString(
+            serviceDetails,
+            'service',
+            defaultValue: 'Servicio',
+          );
+          final serviceId = MapUtils.getInt(
+            serviceDetails,
+            'serviceId',
+            defaultValue: 0,
+          );
+
+          // Navegar directamente a ServicesView con los parámetros
+          Navigator.pushReplacement(
+            context,
+            MaterialPageRoute(
+              builder: (context) =>
+                  ServicesView(serviceName: serviceName, serviceId: serviceId),
+            ),
+          );
+        },
         style: ElevatedButton.styleFrom(
           backgroundColor: _primaryColor,
           padding: const EdgeInsets.symmetric(vertical: 16),
@@ -151,24 +177,6 @@ class Servicesdetails extends StatelessWidget {
     );
   }
 
-  // NUEVO MÉTODO: Lógica para marcar servicio como realizado
-  void _markServiceAsDone() {
-    // Obtener el nombre y ID del servicio desde serviceDetails
-    final serviceName = MapUtils.getString(
-      serviceDetails,
-      'service',
-      defaultValue: 'Servicio',
-    );
-    final serviceId = MapUtils.getInt(
-      serviceDetails,
-      'serviceId',
-      defaultValue: 0,
-    );
-
-    // Navegar a la pantalla de servicios con los datos prellenados
-    onNavigateToServicesWithData(serviceName, serviceId);
-  }
-
   Widget _buildVehicleImageWithProgress() {
     final int percentage = MapUtils.getInt(
       serviceDetails,
@@ -177,7 +185,6 @@ class Servicesdetails extends StatelessWidget {
     final double imageHeight = 400;
     final double gradientTop = (1.0 - (percentage / 100)) * imageHeight;
 
-    // Determinar color basado en el porcentaje
     Color getProgressColor() {
       if (percentage >= 80) {
         return Colors.red.shade400;
@@ -244,7 +251,6 @@ class Servicesdetails extends StatelessWidget {
     final localizations = AppLocalizations.of(context);
 
     return Container(
-      // ✅ AGREGADO: Mismo gradiente que las otras pantallas
       decoration: const BoxDecoration(
         gradient: LinearGradient(
           begin: Alignment.topCenter,
@@ -295,8 +301,9 @@ class Servicesdetails extends StatelessWidget {
                   const SizedBox(height: 16),
                   _buildServiceInfoSection(localizations),
                   _buildMarkAsDoneButton(
+                    context,
                     localizations,
-                  ), // ✅ BOTÓN AGREGADO AQUÍ
+                  ), // Pasar contexto aquí
                 ],
               ),
             ],
@@ -307,7 +314,6 @@ class Servicesdetails extends StatelessWidget {
     );
   }
 
-  // ============ NAVIGATION ============
   Widget _buildBottomNavigationBar(BuildContext context) {
     return BottomNavigationBar(
       type: BottomNavigationBarType.fixed,
@@ -321,19 +327,19 @@ class Servicesdetails extends StatelessWidget {
       },
       items: [
         BottomNavigationBarItem(
-          icon: Icon(Icons.home_outlined),
+          icon: const Icon(Icons.home_outlined),
           label: AppLocalizations.of(context).home,
         ),
         BottomNavigationBarItem(
-          icon: Icon(Icons.add_outlined),
+          icon: const Icon(Icons.add_outlined),
           label: AppLocalizations.of(context).services,
         ),
         BottomNavigationBarItem(
-          icon: Icon(Icons.history_outlined),
+          icon: const Icon(Icons.history_outlined),
           label: AppLocalizations.of(context).history,
         ),
         BottomNavigationBarItem(
-          icon: Icon(Icons.settings_outlined),
+          icon: const Icon(Icons.settings_outlined),
           label: AppLocalizations.of(context).settings,
         ),
       ],

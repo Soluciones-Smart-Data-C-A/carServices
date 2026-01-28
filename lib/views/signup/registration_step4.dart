@@ -32,7 +32,6 @@ class _RegistrationStep4State extends State<RegistrationStep4> {
   bool _isResending = false;
   int _resendCountdown = 60;
   late String _currentOtp;
-  bool _autoFilled = false;
   bool _isOtpComplete = false;
 
   @override
@@ -54,9 +53,7 @@ class _RegistrationStep4State extends State<RegistrationStep4> {
       ) {
         _otpControllers[i].text = _currentOtp[i];
       }
-      setState(() {
-        _autoFilled = true;
-      });
+      setState(() {});
       _checkOtpCompletion();
     }
   }

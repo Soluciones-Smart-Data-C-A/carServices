@@ -10,7 +10,11 @@ import 'package:car_service_app/services/location_service.dart';
 import 'package:car_service_app/services/app_localizations.dart';
 
 class ServicesView extends StatefulWidget {
-  const ServicesView({super.key});
+  // AJUSTE: Parámetros opcionales para inicializar con datos
+  final String? serviceName;
+  final int? serviceId;
+
+  const ServicesView({super.key, this.serviceName, this.serviceId});
 
   @override
   ServicesViewState createState() => ServicesViewState();
@@ -46,6 +50,10 @@ class ServicesViewState extends State<ServicesView> {
   @override
   void initState() {
     super.initState();
+    _logger.i('ServicesView initialized');
+    if (widget.serviceId != null) {
+      _hasServices = true;
+    }
     _initializeData();
     _checkLocationStatus();
   }
@@ -57,14 +65,10 @@ class ServicesViewState extends State<ServicesView> {
 
   void _checkLocationStatus() async {
     final locationService = LocationService();
-
-    // Verificar permisos de ubicación
     final hasPermission = await locationService.checkLocationPermission();
 
     setState(() {
       _isLocationEnabled = hasPermission;
-
-      // Si tenemos permisos y el tracking está activo, obtener distancia automática
       if (_isLocationEnabled && locationService.isTracking) {
         _autoMileage = locationService.todayDistance;
       }
@@ -73,10 +77,7 @@ class ServicesViewState extends State<ServicesView> {
 
   Future<Map<String, dynamic>> _loadServicesData() async {
     try {
-      // Get services using DatabaseService
       final services = await DatabaseService.getServices();
-
-      // Get services with icons using the specific method
       final servicesWithIcons = await DatabaseService.getServicesWithIcons();
 
       final Map<int, String> iconMap = {};
@@ -86,7 +87,10 @@ class ServicesViewState extends State<ServicesView> {
 
       final Map<int, bool> selectionMap = {};
       for (var service in services) {
-        selectionMap[service.id!] = false;
+        _logger.i(
+          'Checking service: ${service.serviceName} with ID: ${service.id}',
+        );
+        selectionMap[service.id!] = (widget.serviceId == service.id);
       }
 
       return {
@@ -123,8 +127,6 @@ class ServicesViewState extends State<ServicesView> {
 
     final locationService = LocationService();
     final currentAutoMileage = locationService.todayDistance;
-
-    // Calculate estimated current mileage: current vehicle mileage + today's auto mileage
     final estimatedMileage =
         _selectedVehicle!.currentMileage + currentAutoMileage.round();
 
@@ -161,7 +163,6 @@ class ServicesViewState extends State<ServicesView> {
       return false;
     }
 
-    // Only validate services if the switch is enabled
     if (_hasServices) {
       final selectedServiceIds = _selectedServices.entries
           .where((entry) => entry.value)
@@ -183,7 +184,6 @@ class ServicesViewState extends State<ServicesView> {
     final mileage = int.parse(_mileageController.text);
     List<int> selectedServiceIds = [];
 
-    // Only get selected services if the switch is enabled
     if (_hasServices) {
       selectedServiceIds = _selectedServices.entries
           .where((entry) => entry.value)
@@ -192,7 +192,6 @@ class ServicesViewState extends State<ServicesView> {
     }
 
     try {
-      // Only save service records if there are selected services
       if (_hasServices && selectedServiceIds.isNotEmpty) {
         await _saveServiceRecords(mileage, selectedServiceIds);
       }
@@ -236,7 +235,7 @@ class ServicesViewState extends State<ServicesView> {
     );
 
     await DatabaseService.updateVehicle(updatedVehicle);
-    _vehiclesFuture = DatabaseService.getVehicles(); // Refresh data
+    _vehiclesFuture = DatabaseService.getVehicles();
   }
 
   void _resetForm() {
@@ -275,17 +274,11 @@ class ServicesViewState extends State<ServicesView> {
       child: Container(
         margin: const EdgeInsets.all(4),
         decoration: BoxDecoration(
-          color: Colors.black.withValues(
-            alpha: 0.5,
-          ), // Color de fondo siempre igual
+          color: Colors.black.withOpacity(0.5),
           borderRadius: BorderRadius.circular(12),
           border: Border.all(
-            color: isSelected
-                ? _primaryColor
-                : _secondaryColor, // Solo el borde cambia
-            width: isSelected
-                ? 3
-                : 2, // Borde más grueso cuando está seleccionado
+            color: isSelected ? _primaryColor : _secondaryColor,
+            width: isSelected ? 3 : 2,
           ),
         ),
         child: Column(
@@ -296,7 +289,7 @@ class ServicesViewState extends State<ServicesView> {
               child: Icon(
                 _getIconForService(iconName),
                 size: 32,
-                color: _textColor, // Color del icono siempre igual
+                color: _textColor,
               ),
             ),
             Padding(
@@ -304,8 +297,8 @@ class ServicesViewState extends State<ServicesView> {
               child: Text(
                 service.serviceName,
                 textAlign: TextAlign.center,
-                style: TextStyle(
-                  color: _textColor, // Color del texto siempre igual
+                style: const TextStyle(
+                  color: _textColor,
                   fontSize: 12,
                   fontWeight: FontWeight.bold,
                 ),
@@ -319,24 +312,22 @@ class ServicesViewState extends State<ServicesView> {
   }
 
   Widget _buildVehicleCard(Vehicle vehicle, bool isSelected) {
-    // Determine image based on make and model if imageUrl is empty
     String getImagePath() {
       if (vehicle.imageUrl != null && vehicle.imageUrl!.isNotEmpty) {
         return vehicle.imageUrl!;
       }
-      // Fallback based on make and model
       if (vehicle.make == 'Chery' && vehicle.model == 'Arauca') {
         return 'assets/images/chery_arauca.png';
       } else if (vehicle.make == 'Toyota' && vehicle.model == 'Corolla') {
         return 'assets/images/toyota_corolla.png';
       }
-      return 'assets/images/default_car.png'; // Default image
+      return 'assets/images/default_car.png';
     }
 
     return Card(
       color: isSelected
-          ? Colors.black.withValues(alpha: 0.5)
-          : Colors.black.withValues(alpha: 0.3),
+          ? Colors.black.withOpacity(0.5)
+          : Colors.black.withOpacity(0.3),
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(12),
         side: BorderSide(
@@ -379,7 +370,7 @@ class ServicesViewState extends State<ServicesView> {
                   const SizedBox(height: 4),
                   Text(
                     "${vehicle.currentMileage} km",
-                    style: TextStyle(
+                    style: const TextStyle(
                       fontSize: 14,
                       color: _primaryColor,
                       fontWeight: FontWeight.w500,
@@ -392,7 +383,7 @@ class ServicesViewState extends State<ServicesView> {
               Container(
                 padding: const EdgeInsets.all(6),
                 decoration: BoxDecoration(
-                  color: _primaryColor.withValues(alpha: 0.2),
+                  color: _primaryColor.withOpacity(0.2),
                   shape: BoxShape.circle,
                 ),
                 child: const Icon(
@@ -500,20 +491,24 @@ class ServicesViewState extends State<ServicesView> {
           Container(
             padding: const EdgeInsets.all(12),
             decoration: BoxDecoration(
-              color: _primaryColor.withValues(alpha: 0.1),
+              color: _primaryColor.withOpacity(0.1),
               borderRadius: BorderRadius.circular(8),
-              border: Border.all(color: _primaryColor.withValues(alpha: 0.3)),
+              border: Border.all(color: _primaryColor.withOpacity(0.3)),
             ),
             child: Row(
               children: [
-                Icon(Icons.directions_car, color: _primaryColor, size: 16),
+                const Icon(
+                  Icons.directions_car,
+                  color: _primaryColor,
+                  size: 16,
+                ),
                 const SizedBox(width: 8),
                 Expanded(
                   child: Text(
                     localizations.todaysAutoMileage(
                       _autoMileage.toStringAsFixed(1),
                     ),
-                    style: TextStyle(
+                    style: const TextStyle(
                       color: _primaryColor,
                       fontSize: 12,
                       fontWeight: FontWeight.w500,
@@ -532,41 +527,6 @@ class ServicesViewState extends State<ServicesView> {
                     ),
                   ),
               ],
-            ),
-          ),
-        ],
-        if (!_isLocationEnabled) ...[
-          const SizedBox(height: 8),
-          GestureDetector(
-            onTap: () {
-              _showSnackBar(
-                localizations.enableLocationForAutoMileage,
-                isError: true,
-              );
-            },
-            child: Container(
-              padding: const EdgeInsets.all(12),
-              decoration: BoxDecoration(
-                color: Colors.orange.withValues(alpha: 0.1),
-                borderRadius: BorderRadius.circular(8),
-                border: Border.all(color: Colors.orange.withValues(alpha: 0.3)),
-              ),
-              child: Row(
-                children: [
-                  Icon(Icons.location_off, color: Colors.orange, size: 16),
-                  const SizedBox(width: 8),
-                  Expanded(
-                    child: Text(
-                      localizations.autoMileageUnavailable,
-                      style: TextStyle(
-                        color: Colors.orange,
-                        fontSize: 12,
-                        fontWeight: FontWeight.w500,
-                      ),
-                    ),
-                  ),
-                ],
-              ),
             ),
           ),
         ],
@@ -607,7 +567,7 @@ class ServicesViewState extends State<ServicesView> {
 
   Widget _buildServicesGrid(AppLocalizations localizations) {
     if (!_hasServices) {
-      return const SizedBox.shrink(); // Hide section if no services
+      return const SizedBox.shrink();
     }
 
     return Column(
@@ -703,24 +663,6 @@ class ServicesViewState extends State<ServicesView> {
                 color: Colors.white,
               ),
             ),
-            if (_isLocationEnabled && _autoMileage > 0) ...[
-              const SizedBox(width: 8),
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                decoration: BoxDecoration(
-                  color: Colors.white.withValues(alpha: 0.3),
-                  borderRadius: BorderRadius.circular(6),
-                ),
-                child: Text(
-                  localizations.auto,
-                  style: const TextStyle(
-                    fontSize: 10,
-                    fontWeight: FontWeight.bold,
-                    color: Colors.white,
-                  ),
-                ),
-              ),
-            ],
           ],
         ),
       ),
@@ -859,16 +801,6 @@ class ServicesViewState extends State<ServicesView> {
           ),
         ),
         centerTitle: true,
-        actions: [
-          if (_isLocationEnabled)
-            IconButton(
-              icon: const Icon(Icons.location_on, color: Color(0xFF2AEFDA)),
-              onPressed: () {
-                _showSnackBar(localizations.locationTrackingEnabled);
-              },
-              tooltip: localizations.locationTrackingActive,
-            ),
-        ],
       ),
       body: FutureBuilder<List<Vehicle>>(
         future: _vehiclesFuture,

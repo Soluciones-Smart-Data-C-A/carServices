@@ -166,6 +166,10 @@ class _MainScreenState extends State<MainScreen> {
   bool _locationEnabled = false;
   late LocationService _locationService;
 
+  // AJUSTE: Variables para manejar datos de servicio pendientes
+  int? _pendingServiceId;
+  String? _pendingServiceName;
+
   @override
   void initState() {
     super.initState();
@@ -192,16 +196,29 @@ class _MainScreenState extends State<MainScreen> {
     }
   }
 
+  // AJUSTE: Función para navegar a servicios con ID y nombre
+  void _navigateToServicesWithData(String name, int id) {
+    setState(() {
+      _pendingServiceId = id;
+      _pendingServiceName = name;
+      _selectedIndex = 1; // Cambiar a la pestaña de Servicios (índice 1)
+    });
+  }
+
   List<Widget> get _widgetOptions {
     return <Widget>[
       DashboardView(
         onNavigateToServices: () => _onItemTapped(1),
         onNavigateToHistory: () => _onItemTapped(2),
         onNavigateToSettings: () => _onItemTapped(3),
+        onNavigateToServicesWithData: _navigateToServicesWithData,
         todayDistance: _todayDistance,
         locationEnabled: _locationEnabled,
       ),
-      ServicesView(),
+      ServicesView(
+        serviceId: _pendingServiceId,
+        serviceName: _pendingServiceName,
+      ),
       HistoryView(),
       SettingsView(),
     ];
@@ -210,6 +227,11 @@ class _MainScreenState extends State<MainScreen> {
   void _onItemTapped(int index) {
     setState(() {
       _selectedIndex = index;
+      // Limpiar datos pendientes si se navega manualmente a otra pestaña
+      if (index != 1) {
+        _pendingServiceId = null;
+        _pendingServiceName = null;
+      }
     });
   }
 

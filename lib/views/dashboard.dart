@@ -7,12 +7,13 @@ import 'package:car_service_app/services/database_service.dart';
 import 'package:car_service_app/services/prediction_logic.dart';
 import 'package:car_service_app/utils/index.dart';
 import 'package:car_service_app/views/services_details.dart';
-import 'package:car_service_app/views/services.dart'; // Asegúrate de importar ServicesView
 
 class DashboardView extends StatefulWidget {
   final VoidCallback onNavigateToServices;
   final VoidCallback onNavigateToHistory;
   final VoidCallback onNavigateToSettings;
+  // AJUSTE: Solo agregamos este callback necesario
+  final Function(String, int) onNavigateToServicesWithData;
   final double todayDistance;
   final bool locationEnabled;
 
@@ -21,6 +22,7 @@ class DashboardView extends StatefulWidget {
     required this.onNavigateToServices,
     required this.onNavigateToHistory,
     required this.onNavigateToSettings,
+    required this.onNavigateToServicesWithData, // AJUSTE: Parámetro requerido
     required this.todayDistance,
     required this.locationEnabled,
   });
@@ -78,17 +80,9 @@ class _DashboardViewState extends State<DashboardView> {
     }
   }
 
-  // ============ NUEVOS MÉTODOS DE NAVEGACIÓN ============
+  // Mantenemos tu lógica de navegación interna si la usas, pero pasamos el callback al detalle
   void _navigateToServicesWithData(String serviceName, int serviceId) {
-    Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (context) => ServicesView(),
-        settings: RouteSettings(
-          arguments: {'serviceName': serviceName, 'serviceId': serviceId},
-        ),
-      ),
-    );
+    widget.onNavigateToServicesWithData(serviceName, serviceId);
   }
 
   @override
@@ -418,7 +412,9 @@ class _DashboardViewState extends State<DashboardView> {
                 onNavigateToServices: widget.onNavigateToServices,
                 onNavigateToHistory: widget.onNavigateToHistory,
                 onNavigateToSettings: widget.onNavigateToSettings,
-                onNavigateToServicesWithData: _navigateToServicesWithData,
+                // AJUSTE: Pasamos la función que viene del widget
+                onNavigateToServicesWithData:
+                    widget.onNavigateToServicesWithData,
               ),
             ),
           );
