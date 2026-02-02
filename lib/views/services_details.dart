@@ -1,8 +1,7 @@
-// services_details.dart - Corrección del método _markServiceAsDone
+// services_details.dart
 import 'package:flutter/material.dart';
 import 'package:car_service_app/utils/index.dart';
 import 'package:car_service_app/services/app_localizations.dart';
-// Añade esta importación
 import 'package:car_service_app/views/services.dart';
 
 class Servicesdetails extends StatelessWidget {
@@ -10,8 +9,7 @@ class Servicesdetails extends StatelessWidget {
   final VoidCallback onNavigateToServices;
   final VoidCallback onNavigateToHistory;
   final VoidCallback onNavigateToSettings;
-  final Function(String, int)
-  onNavigateToServicesWithData; // Callback para pasar datos específicos
+  final Function(String, int) onNavigateToServicesWithData;
 
   const Servicesdetails({
     super.key,
@@ -19,7 +17,7 @@ class Servicesdetails extends StatelessWidget {
     required this.onNavigateToServices,
     required this.onNavigateToHistory,
     required this.onNavigateToSettings,
-    required this.onNavigateToServicesWithData, // Parámetro requerido
+    required this.onNavigateToServicesWithData,
   });
 
   // Constants
@@ -130,24 +128,50 @@ class Servicesdetails extends StatelessWidget {
       margin: const EdgeInsets.only(top: 20),
       child: ElevatedButton(
         onPressed: () {
-          // Extraer datos del servicio
+          // Extraer el ID y nombre del servicio
           final serviceName = MapUtils.getString(
             serviceDetails,
             'service',
             defaultValue: 'Servicio',
           );
-          final serviceId = MapUtils.getInt(
-            serviceDetails,
-            'serviceId',
-            defaultValue: 0,
-          );
 
-          // Navegar directamente a ServicesView con los parámetros
+          // IMPORTANTE: Intentar obtener el ID de múltiples fuentes
+          int? serviceId;
+
+          // Opción 1: 'id' (clave más común)
+          if (serviceDetails.containsKey('id')) {
+            serviceId = MapUtils.getInt(serviceDetails, 'id');
+          }
+
+          // Opción 2: 'serviceId'
+          if ((serviceId == null || serviceId == 0) &&
+              serviceDetails.containsKey('serviceId')) {
+            serviceId = MapUtils.getInt(serviceDetails, 'serviceId');
+          }
+
+          // Opción 3: Si no hay ID, usar mapeo por nombre como respaldo
+          if (serviceId == null || serviceId == 0) {
+            // Log para depuración
+            print(
+              '⚠️ No ID found in serviceDetails. Keys available: ${serviceDetails.keys}',
+            );
+            print('Service name: $serviceName');
+
+            // Mapeo de emergencia - debería ser temporal
+            serviceId = _getServiceIdFromName(serviceName);
+          }
+
+          print('✅ Navigating to ServicesView with:');
+          print('  - Name: $serviceName');
+          print('  - ID: $serviceId');
+
           Navigator.pushReplacement(
             context,
             MaterialPageRoute(
-              builder: (context) =>
-                  ServicesView(serviceName: serviceName, serviceId: serviceId),
+              builder: (context) => ServicesView(
+                serviceName: serviceName,
+                serviceId: serviceId, // ← Pasamos el ID real
+              ),
             ),
           );
         },
@@ -175,6 +199,27 @@ class Servicesdetails extends StatelessWidget {
         ),
       ),
     );
+  }
+
+  // Mapeo de emergencia - SOLO como respaldo temporal
+  int _getServiceIdFromName(String name) {
+    final nameLower = name.toLowerCase();
+
+    if (nameLower.contains('aceite')) return 1;
+    if (nameLower.contains('filtro') && nameLower.contains('aire')) return 2;
+    if (nameLower.contains('pastillas') && nameLower.contains('freno'))
+      return 3;
+    if (nameLower.contains('rotación') || nameLower.contains('llantas'))
+      return 4;
+    if (nameLower.contains('alineación') || nameLower.contains('balanceo'))
+      return 5;
+    if (nameLower.contains('batería')) return 6;
+    if (nameLower.contains('correa') && nameLower.contains('distribución'))
+      return 7;
+    if (nameLower.contains('lavado') || nameLower.contains('detallado'))
+      return 8;
+
+    return 0; // 0 significa "no encontrado"
   }
 
   Widget _buildVehicleImageWithProgress() {
@@ -300,10 +345,7 @@ class Servicesdetails extends StatelessWidget {
                   ),
                   const SizedBox(height: 16),
                   _buildServiceInfoSection(localizations),
-                  _buildMarkAsDoneButton(
-                    context,
-                    localizations,
-                  ), // Pasar contexto aquí
+                  _buildMarkAsDoneButton(context, localizations),
                 ],
               ),
             ],

@@ -50,7 +50,7 @@ class ServicesViewState extends State<ServicesView> {
   @override
   void initState() {
     super.initState();
-    _logger.i('ServicesView initialized');
+    _logger.i('ServicesView initialized  ${widget.serviceId}');
     if (widget.serviceId != null) {
       _hasServices = true;
     }
