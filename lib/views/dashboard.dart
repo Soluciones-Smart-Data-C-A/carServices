@@ -12,7 +12,6 @@ class DashboardView extends StatefulWidget {
   final VoidCallback onNavigateToServices;
   final VoidCallback onNavigateToHistory;
   final VoidCallback onNavigateToSettings;
-  // AJUSTE: Solo agregamos este callback necesario
   final Function(String, int) onNavigateToServicesWithData;
   final double todayDistance;
   final bool locationEnabled;
@@ -22,7 +21,7 @@ class DashboardView extends StatefulWidget {
     required this.onNavigateToServices,
     required this.onNavigateToHistory,
     required this.onNavigateToSettings,
-    required this.onNavigateToServicesWithData, // AJUSTE: Parámetro requerido
+    required this.onNavigateToServicesWithData,
     required this.todayDistance,
     required this.locationEnabled,
   });
@@ -32,7 +31,7 @@ class DashboardView extends StatefulWidget {
 }
 
 class _DashboardViewState extends State<DashboardView> {
-  // Services
+  // Servicios
   late final PredictionService _predictionService;
   static final Logger _logger = Logger();
 
@@ -42,7 +41,7 @@ class _DashboardViewState extends State<DashboardView> {
   late Future<Vehicle?> _currentVehicleFuture;
   late Future<List<ServiceRecord>> _recentServicesFuture;
 
-  // Constants
+  // Constantes
   static const _primaryColor = Color(0xFF2AEFDA);
   static const _secondaryColor = Color(0xFF75A6B1);
   static const _backgroundColor = Colors.transparent;
@@ -78,11 +77,6 @@ class _DashboardViewState extends State<DashboardView> {
       _logger.i('Error loading current vehicle: $e');
       return null;
     }
-  }
-
-  // Mantenemos tu lógica de navegación interna si la usas, pero pasamos el callback al detalle
-  void _navigateToServicesWithData(String serviceName, int serviceId) {
-    widget.onNavigateToServicesWithData(serviceName, serviceId);
   }
 
   @override
@@ -138,7 +132,6 @@ class _DashboardViewState extends State<DashboardView> {
     );
   }
 
-  // ============ HEADER SECTION ============
   Widget _buildUserInfo(Vehicle vehicle) {
     return Row(
       children: [
@@ -297,53 +290,116 @@ class _DashboardViewState extends State<DashboardView> {
     );
   }
 
-  // ============ LOCATION CARD ============
   Widget _buildLocationCard() {
-    return Card(
-      color: widget.locationEnabled
-          ? Colors.green.withValues(alpha: 0.2)
-          : Colors.orange.withValues(alpha: 0.2),
-      child: Padding(
-        padding: const EdgeInsets.all(16.0),
-        child: Row(
-          children: [
-            Icon(
-              widget.locationEnabled ? Icons.location_on : Icons.location_off,
-              color: widget.locationEnabled ? Colors.green : Colors.orange,
-              size: 28,
-            ),
-            const SizedBox(width: 16),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    widget.locationEnabled
-                        ? AppLocalizations.of(context).locationTrackingActive
-                        : AppLocalizations.of(context).locationTrackingDisabled,
-                    style: const TextStyle(
-                      color: Colors.white,
-                      fontSize: 16,
-                      fontWeight: FontWeight.bold,
-                    ),
+    return Container(
+      width: double.infinity,
+      decoration: BoxDecoration(
+        color: Colors.black.withValues(alpha: 0.3),
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: Colors.white10),
+      ),
+      child: Column(
+        children: [
+          Padding(
+            padding: const EdgeInsets.all(16.0),
+            child: Row(
+              children: [
+                Icon(
+                  widget.locationEnabled
+                      ? Icons.location_on
+                      : Icons.location_off,
+                  color: widget.locationEnabled ? Colors.red : Colors.orange,
+                  size: 24,
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        widget.locationEnabled
+                            ? '${AppLocalizations.of(context).todayDistance}: ${widget.todayDistance.toStringAsFixed(1)} ${AppLocalizations.of(context).km}'
+                            : AppLocalizations.of(context).enableLocation,
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 15,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                    ],
                   ),
-                  const SizedBox(height: 4),
-                  Text(
-                    widget.locationEnabled
-                        ? '${AppLocalizations.of(context).todayDistance}: ${widget.todayDistance.toStringAsFixed(1)} ${AppLocalizations.of(context).km}'
-                        : AppLocalizations.of(context).enableLocation,
-                    style: TextStyle(color: Colors.white70, fontSize: 14),
+                ),
+              ],
+            ),
+          ),
+          // Mapa de fondo rectangular con Stack para mayor control
+          Container(
+            height: 100,
+            margin: const EdgeInsets.only(left: 12, right: 12, bottom: 12),
+            width: double.infinity,
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(15),
+              color: Colors.grey[900], // Fondo de respaldo si la imagen falla
+            ),
+            child: ClipRRect(
+              borderRadius: BorderRadius.circular(15),
+              child: Stack(
+                fit: StackFit.expand,
+                children: [
+                  Image.asset(
+                    'assets/images/map_background.png',
+                    fit: BoxFit.cover,
+                    errorBuilder: (context, error, stackTrace) {
+                      return Container(
+                        color: Colors.white10,
+                        child: const Icon(
+                          Icons.map_outlined,
+                          color: Colors.white24,
+                        ),
+                      );
+                    },
+                  ),
+                  Container(color: Colors.black.withValues(alpha: 0.2)),
+                  Center(
+                    child: Stack(
+                      alignment: Alignment.center,
+                      children: [
+                        if (widget.locationEnabled)
+                          TweenAnimationBuilder(
+                            tween: Tween(begin: 0.0, end: 1.0),
+                            duration: const Duration(seconds: 2),
+                            builder: (context, double value, child) {
+                              return Container(
+                                width: 40 * value,
+                                height: 40 * value,
+                                decoration: BoxDecoration(
+                                  shape: BoxShape.circle,
+                                  color: Colors.red.withValues(
+                                    alpha: 1.0 - value,
+                                  ),
+                                ),
+                              );
+                            },
+                          ),
+                        Icon(
+                          Icons.my_location,
+                          color: widget.locationEnabled
+                              ? Colors.red
+                              : Colors.white38,
+                          size: 26,
+                        ),
+                      ],
+                    ),
                   ),
                 ],
               ),
             ),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }
 
-  // ============ UPCOMING SERVICES ============
   Widget _buildUpcomingServicesSection() {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -386,14 +442,13 @@ class _DashboardViewState extends State<DashboardView> {
   Widget _buildServiceItem(Map<String, dynamic> service) {
     final int percentage = service['percentageRemaining'] ?? 0;
 
-    // Determine color based on percentage
     Color getPercentageColor() {
       if (percentage >= 80) {
-        return Colors.red.shade400; // Red for 80-100% (urgent)
+        return Colors.red.shade400;
       } else if (percentage >= 50) {
-        return Colors.orange.shade400; // Orange for 50-79% (intermediate)
+        return Colors.orange.shade400;
       } else {
-        return Colors.green.shade400; // Green for 0-49% (low)
+        return Colors.green.shade400;
       }
     }
 
@@ -427,12 +482,11 @@ class _DashboardViewState extends State<DashboardView> {
               width: isUrgent ? 2 : 1,
             ),
           ),
-          color: Colors.black.withOpacity(0.3),
+          color: Colors.black.withValues(alpha: 0.3),
           child: Padding(
             padding: const EdgeInsets.all(16.0),
             child: Row(
               children: [
-                // Texto al inicio (Expanded para ocupar el espacio disponible)
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -469,7 +523,6 @@ class _DashboardViewState extends State<DashboardView> {
                   ),
                 ),
                 const SizedBox(width: 8),
-                // Icono arriba y Porcentaje abajo (a la derecha)
                 Column(
                   mainAxisSize: MainAxisSize.min,
                   children: [
@@ -504,7 +557,6 @@ class _DashboardViewState extends State<DashboardView> {
     );
   }
 
-  // ============ RECENT SERVICES ============
   Widget _buildRecentServicesSection() {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -514,7 +566,7 @@ class _DashboardViewState extends State<DashboardView> {
           children: [
             Text(
               AppLocalizations.of(context).recentServices,
-              style: TextStyle(
+              style: const TextStyle(
                 color: Colors.white,
                 fontSize: 20,
                 fontWeight: FontWeight.bold,
@@ -526,7 +578,7 @@ class _DashboardViewState extends State<DashboardView> {
               },
               child: Text(
                 AppLocalizations.of(context).viewAll,
-                style: TextStyle(color: _primaryColor),
+                style: const TextStyle(color: _primaryColor),
               ),
             ),
           ],
@@ -591,7 +643,7 @@ class _DashboardViewState extends State<DashboardView> {
                   const SizedBox(height: 2),
                   Text(
                     DateFormatter.formatDate(service.date),
-                    style: TextStyle(color: Colors.white70, fontSize: 12),
+                    style: const TextStyle(color: Colors.white70, fontSize: 12),
                   ),
                 ],
               ),
@@ -602,14 +654,13 @@ class _DashboardViewState extends State<DashboardView> {
     );
   }
 
-  // ============ QUICK ACTIONS ============
   Widget _buildQuickActions() {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
           AppLocalizations.of(context).quickActions,
-          style: TextStyle(
+          style: const TextStyle(
             color: Colors.white,
             fontSize: 20,
             fontWeight: FontWeight.bold,
@@ -621,7 +672,7 @@ class _DashboardViewState extends State<DashboardView> {
           runSpacing: 12,
           children: [
             SizedBox(
-              width: MediaQuery.of(context).size.width * 0.4,
+              width: MediaQuery.of(context).size.width * 0.43,
               child: _buildActionButton(
                 icon: Icons.add_circle_outline,
                 title: AppLocalizations.of(context).addService,
@@ -630,30 +681,30 @@ class _DashboardViewState extends State<DashboardView> {
               ),
             ),
             SizedBox(
-              width: MediaQuery.of(context).size.width * 0.4,
+              width: MediaQuery.of(context).size.width * 0.43,
               child: _buildActionButton(
                 icon: Icons.directions_car,
                 title: AppLocalizations.of(context).addVehicle,
                 color: Colors.blue,
-                onTap: () => widget.onNavigateToSettings(),
+                onTap: widget.onNavigateToSettings,
               ),
             ),
             SizedBox(
-              width: MediaQuery.of(context).size.width * 0.4,
+              width: MediaQuery.of(context).size.width * 0.43,
               child: _buildActionButton(
                 icon: Icons.history,
                 title: AppLocalizations.of(context).viewHistory,
                 color: Colors.orange,
-                onTap: () => widget.onNavigateToHistory(),
+                onTap: widget.onNavigateToHistory,
               ),
             ),
             SizedBox(
-              width: MediaQuery.of(context).size.width * 0.4,
+              width: MediaQuery.of(context).size.width * 0.43,
               child: _buildActionButton(
                 icon: Icons.settings,
                 title: AppLocalizations.of(context).settings,
                 color: Colors.purple,
-                onTap: () => widget.onNavigateToSettings(),
+                onTap: widget.onNavigateToSettings,
               ),
             ),
           ],
@@ -673,30 +724,35 @@ class _DashboardViewState extends State<DashboardView> {
       child: InkWell(
         onTap: onTap,
         borderRadius: BorderRadius.circular(8),
-        child: Padding(
-          padding: const EdgeInsets.all(12.0),
-          child: Row(
-            children: [
-              Icon(icon, color: color, size: 20),
-              const SizedBox(width: 8),
-              Expanded(
-                child: Text(
-                  title,
-                  style: const TextStyle(
-                    color: Colors.white,
-                    fontSize: 14,
-                    fontWeight: FontWeight.w500,
+        child: SizedBox(
+          height:
+              60, // ALTURA AJUSTADA: Todos los botones tendrán esta altura fija
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 12.0),
+            child: Row(
+              children: [
+                Icon(icon, color: color, size: 20),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    title,
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 13,
+                      fontWeight: FontWeight.w500,
+                    ),
                   ),
                 ),
-              ),
-            ],
+              ],
+            ),
           ),
         ),
       ),
     );
   }
 
-  // ============ UTILITY WIDGETS ============
   Widget _buildLoadingIndicator() {
     return const Center(child: CircularProgressIndicator(color: _textColor));
   }
@@ -710,11 +766,11 @@ class _DashboardViewState extends State<DashboardView> {
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              CircularProgressIndicator(color: _primaryColor),
+              const CircularProgressIndicator(color: _primaryColor),
               const SizedBox(height: 16),
               Text(
                 AppLocalizations.of(context).loadingServices,
-                style: TextStyle(color: _textColor),
+                style: const TextStyle(color: _textColor),
               ),
             ],
           ),
@@ -753,11 +809,11 @@ class _DashboardViewState extends State<DashboardView> {
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Icon(Icons.info_outline, color: _grey300, size: 48),
+              const Icon(Icons.info_outline, color: _grey300, size: 48),
               const SizedBox(height: 16),
               Text(
                 message,
-                style: TextStyle(color: Colors.white70),
+                style: const TextStyle(color: Colors.white70),
                 textAlign: TextAlign.center,
               ),
             ],
