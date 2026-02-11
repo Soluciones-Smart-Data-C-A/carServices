@@ -160,7 +160,7 @@ class _DashboardViewState extends State<DashboardView> {
                   color: _textColor,
                 ),
               ),
-              const SizedBox(height: 4),
+              const SizedBox(height: 2),
               Text(
                 "${vehicle.make} ${vehicle.model}",
                 style: TextStyle(fontSize: 16, color: Colors.grey[300]),

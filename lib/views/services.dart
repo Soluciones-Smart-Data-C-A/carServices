@@ -330,10 +330,7 @@ class ServicesViewState extends State<ServicesView> {
           : Colors.black.withOpacity(0.3),
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(12),
-        side: BorderSide(
-          color: isSelected ? _primaryColor : _secondaryColor,
-          width: 1,
-        ),
+        side: BorderSide(color: _secondaryColor, width: 1),
       ),
       margin: const EdgeInsets.symmetric(horizontal: 0),
       child: Padding(
@@ -379,19 +376,6 @@ class ServicesViewState extends State<ServicesView> {
                 ],
               ),
             ),
-            if (_isLocationEnabled)
-              Container(
-                padding: const EdgeInsets.all(6),
-                decoration: BoxDecoration(
-                  color: _primaryColor.withOpacity(0.2),
-                  shape: BoxShape.circle,
-                ),
-                child: const Icon(
-                  Icons.location_on,
-                  color: _primaryColor,
-                  size: 16,
-                ),
-              ),
           ],
         ),
       ),
