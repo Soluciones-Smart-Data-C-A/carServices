@@ -160,10 +160,10 @@ class _DashboardViewState extends State<DashboardView> {
                   color: _textColor,
                 ),
               ),
-              const SizedBox(height: 2),
+              const SizedBox(height: 1),
               Text(
                 "${vehicle.make} ${vehicle.model}",
-                style: TextStyle(fontSize: 16, color: Colors.grey[300]),
+                style: TextStyle(fontSize: 12, color: Colors.grey[300]),
               ),
             ],
           ),
@@ -217,7 +217,7 @@ class _DashboardViewState extends State<DashboardView> {
             const SizedBox(width: 12),
             _buildServiceInfoCard(
               AppLocalizations.of(context).estimated,
-              "53,000",
+              "353,000",
               AppLocalizations.of(context).km,
             ),
             const SizedBox(width: 12),
@@ -412,7 +412,6 @@ class _DashboardViewState extends State<DashboardView> {
                 onNavigateToServices: widget.onNavigateToServices,
                 onNavigateToHistory: widget.onNavigateToHistory,
                 onNavigateToSettings: widget.onNavigateToSettings,
-                // AJUSTE: Pasamos la función que viene del widget
                 onNavigateToServicesWithData:
                     widget.onNavigateToServicesWithData,
               ),
@@ -424,28 +423,16 @@ class _DashboardViewState extends State<DashboardView> {
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(15),
             side: BorderSide(
-              color: isUrgent ? Colors.red.shade400 : _secondaryColor,
+              color: isUrgent ? Colors.red.shade400 : Colors.white10,
               width: isUrgent ? 2 : 1,
             ),
           ),
-          color: Colors.black.withValues(alpha: 0.3),
+          color: Colors.black.withOpacity(0.3),
           child: Padding(
             padding: const EdgeInsets.all(16.0),
             child: Row(
               children: [
-                Container(
-                  padding: const EdgeInsets.all(8.0),
-                  decoration: BoxDecoration(
-                    color: const Color(0x8074cfde),
-                    borderRadius: BorderRadius.circular(100),
-                  ),
-                  child: Icon(
-                    getIconData(service['icon'] ?? 'default'),
-                    color: isUrgent ? Colors.red.shade400 : Colors.white,
-                    size: 24.0,
-                  ),
-                ),
-                const SizedBox(width: 16),
+                // Texto al inicio (Expanded para ocupar el espacio disponible)
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -462,8 +449,10 @@ class _DashboardViewState extends State<DashboardView> {
                       Text(
                         '${AppLocalizations.of(context).recommendedAt} ${service['kmToNextService'] ?? 'N/A'} ${AppLocalizations.of(context).km}',
                         style: TextStyle(
-                          fontSize: 14,
-                          color: isUrgent ? Colors.red.shade400 : _grey300,
+                          fontSize: 12,
+                          color: isUrgent
+                              ? Colors.red.shade400
+                              : Colors.white70,
                         ),
                       ),
                       const SizedBox(height: 2),
@@ -471,30 +460,41 @@ class _DashboardViewState extends State<DashboardView> {
                         '${AppLocalizations.of(context).approxIn} ${service['timeRemaining'] ?? 'N/A'} ${service['timeUnit'] ?? ''}',
                         style: TextStyle(
                           fontSize: 12,
-                          color: isUrgent ? Colors.red.shade400 : _grey300,
+                          color: isUrgent
+                              ? Colors.red.shade400
+                              : Colors.white70,
                         ),
                       ),
                     ],
                   ),
                 ),
-                Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 12,
-                    vertical: 6,
-                  ),
-                  decoration: BoxDecoration(
-                    color: percentageColor.withValues(alpha: 0.2),
-                    borderRadius: BorderRadius.circular(20),
-                    border: Border.all(color: percentageColor, width: 1.5),
-                  ),
-                  child: Text(
-                    '$percentage%',
-                    style: TextStyle(
-                      fontSize: 14,
-                      fontWeight: FontWeight.bold,
-                      color: percentageColor,
+                const SizedBox(width: 8),
+                // Icono arriba y Porcentaje abajo (a la derecha)
+                Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(8.0),
+                      decoration: BoxDecoration(
+                        color: const Color(0x3374cfde),
+                        borderRadius: BorderRadius.circular(100),
+                      ),
+                      child: Icon(
+                        getIconData(service['icon'] ?? 'default'),
+                        color: isUrgent ? Colors.red.shade400 : Colors.white,
+                        size: 24.0,
+                      ),
                     ),
-                  ),
+                    const SizedBox(height: 6),
+                    Text(
+                      '$percentage%',
+                      style: TextStyle(
+                        fontSize: 14,
+                        fontWeight: FontWeight.bold,
+                        color: percentageColor,
+                      ),
+                    ),
+                  ],
                 ),
               ],
             ),
