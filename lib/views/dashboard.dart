@@ -550,6 +550,8 @@ class _DashboardViewState extends State<DashboardView> {
         },
         child: Card(
           elevation: 0,
+          margin: EdgeInsets
+              .zero, // Eliminamos el margen externo para alineación total
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(15),
             side: BorderSide(
@@ -559,7 +561,10 @@ class _DashboardViewState extends State<DashboardView> {
           ),
           color: Colors.black.withValues(alpha: 0.3),
           child: Padding(
-            padding: const EdgeInsets.all(16.0),
+            padding: const EdgeInsets.symmetric(
+              horizontal: 16.0,
+              vertical: 20.0,
+            ), // Ajuste de padding interno
             child: Row(
               children: [
                 Expanded(
@@ -635,12 +640,12 @@ class _DashboardViewState extends State<DashboardView> {
   Widget _buildServiceCard(ServiceRecordDisplay service) {
     return Card(
       elevation: 0,
+      margin: const EdgeInsets.only(bottom: 8),
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(15),
         side: const BorderSide(color: Colors.white10, width: 1),
       ),
       color: Colors.black.withValues(alpha: 0.3),
-      margin: const EdgeInsets.only(bottom: 8),
       child: Padding(
         padding: const EdgeInsets.all(16.0),
         child: Row(
