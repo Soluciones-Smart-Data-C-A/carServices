@@ -1,13 +1,15 @@
-// services_details.dart (corregido con fondo consistente)
+// services_details.dart
 import 'package:flutter/material.dart';
 import 'package:car_service_app/utils/index.dart';
 import 'package:car_service_app/services/app_localizations.dart';
+import 'package:car_service_app/views/services.dart';
 
 class Servicesdetails extends StatelessWidget {
   final Map<String, dynamic> serviceDetails;
   final VoidCallback onNavigateToServices;
   final VoidCallback onNavigateToHistory;
   final VoidCallback onNavigateToSettings;
+  final Function(String, int) onNavigateToServicesWithData;
 
   const Servicesdetails({
     super.key,
@@ -15,6 +17,7 @@ class Servicesdetails extends StatelessWidget {
     required this.onNavigateToServices,
     required this.onNavigateToHistory,
     required this.onNavigateToSettings,
+    required this.onNavigateToServicesWithData,
   });
 
   // Constants
@@ -116,6 +119,109 @@ class Servicesdetails extends StatelessWidget {
     );
   }
 
+  Widget _buildMarkAsDoneButton(
+    BuildContext context,
+    AppLocalizations localizations,
+  ) {
+    return Container(
+      width: double.infinity,
+      margin: const EdgeInsets.only(top: 20),
+      child: ElevatedButton(
+        onPressed: () {
+          // Extraer el ID y nombre del servicio
+          final serviceName = MapUtils.getString(
+            serviceDetails,
+            'service',
+            defaultValue: 'Servicio',
+          );
+
+          // IMPORTANTE: Intentar obtener el ID de múltiples fuentes
+          int? serviceId;
+
+          // Opción 1: 'id' (clave más común)
+          if (serviceDetails.containsKey('id')) {
+            serviceId = MapUtils.getInt(serviceDetails, 'id');
+          }
+
+          // Opción 2: 'serviceId'
+          if ((serviceId == null || serviceId == 0) &&
+              serviceDetails.containsKey('serviceId')) {
+            serviceId = MapUtils.getInt(serviceDetails, 'serviceId');
+          }
+
+          // Opción 3: Si no hay ID, usar mapeo por nombre como respaldo
+          if (serviceId == null || serviceId == 0) {
+            // Log para depuración
+            print(
+              '⚠️ No ID found in serviceDetails. Keys available: ${serviceDetails.keys}',
+            );
+            print('Service name: $serviceName');
+
+            // Mapeo de emergencia - debería ser temporal
+            serviceId = _getServiceIdFromName(serviceName);
+          }
+
+          print('✅ Navigating to ServicesView with:');
+          print('  - Name: $serviceName');
+          print('  - ID: $serviceId');
+
+          Navigator.pushReplacement(
+            context,
+            MaterialPageRoute(
+              builder: (context) => ServicesView(
+                serviceName: serviceName,
+                serviceId: serviceId, // ← Pasamos el ID real
+              ),
+            ),
+          );
+        },
+        style: ElevatedButton.styleFrom(
+          backgroundColor: _primaryColor,
+          padding: const EdgeInsets.symmetric(vertical: 16),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
+          ),
+        ),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            const Icon(Icons.check_circle_outline, size: 20),
+            const SizedBox(width: 8),
+            Text(
+              localizations.markAsDone,
+              style: const TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.bold,
+                color: Colors.white,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  // Mapeo de emergencia - SOLO como respaldo temporal
+  int _getServiceIdFromName(String name) {
+    final nameLower = name.toLowerCase();
+
+    if (nameLower.contains('aceite')) return 1;
+    if (nameLower.contains('filtro') && nameLower.contains('aire')) return 2;
+    if (nameLower.contains('pastillas') && nameLower.contains('freno'))
+      return 3;
+    if (nameLower.contains('rotación') || nameLower.contains('llantas'))
+      return 4;
+    if (nameLower.contains('alineación') || nameLower.contains('balanceo'))
+      return 5;
+    if (nameLower.contains('batería')) return 6;
+    if (nameLower.contains('correa') && nameLower.contains('distribución'))
+      return 7;
+    if (nameLower.contains('lavado') || nameLower.contains('detallado'))
+      return 8;
+
+    return 0; // 0 significa "no encontrado"
+  }
+
   Widget _buildVehicleImageWithProgress() {
     final int percentage = MapUtils.getInt(
       serviceDetails,
@@ -124,7 +230,6 @@ class Servicesdetails extends StatelessWidget {
     final double imageHeight = 400;
     final double gradientTop = (1.0 - (percentage / 100)) * imageHeight;
 
-    // Determinar color basado en el porcentaje
     Color getProgressColor() {
       if (percentage >= 80) {
         return Colors.red.shade400;
@@ -191,7 +296,6 @@ class Servicesdetails extends StatelessWidget {
     final localizations = AppLocalizations.of(context);
 
     return Container(
-      // ✅ AGREGADO: Mismo gradiente que las otras pantallas
       decoration: const BoxDecoration(
         gradient: LinearGradient(
           begin: Alignment.topCenter,
@@ -241,6 +345,7 @@ class Servicesdetails extends StatelessWidget {
                   ),
                   const SizedBox(height: 16),
                   _buildServiceInfoSection(localizations),
+                  _buildMarkAsDoneButton(context, localizations),
                 ],
               ),
             ],
@@ -251,7 +356,6 @@ class Servicesdetails extends StatelessWidget {
     );
   }
 
-  // ============ NAVIGATION ============
   Widget _buildBottomNavigationBar(BuildContext context) {
     return BottomNavigationBar(
       type: BottomNavigationBarType.fixed,
@@ -265,19 +369,19 @@ class Servicesdetails extends StatelessWidget {
       },
       items: [
         BottomNavigationBarItem(
-          icon: Icon(Icons.home_outlined),
+          icon: const Icon(Icons.home_outlined),
           label: AppLocalizations.of(context).home,
         ),
         BottomNavigationBarItem(
-          icon: Icon(Icons.add_outlined),
+          icon: const Icon(Icons.add_outlined),
           label: AppLocalizations.of(context).services,
         ),
         BottomNavigationBarItem(
-          icon: Icon(Icons.history_outlined),
+          icon: const Icon(Icons.history_outlined),
           label: AppLocalizations.of(context).history,
         ),
         BottomNavigationBarItem(
-          icon: Icon(Icons.settings_outlined),
+          icon: const Icon(Icons.settings_outlined),
           label: AppLocalizations.of(context).settings,
         ),
       ],

@@ -1,7 +1,7 @@
+import 'package:car_service_app/models/service_record_display.dart';
 import 'package:flutter/material.dart';
 import 'package:logger/logger.dart';
 import 'package:car_service_app/models/vehicle.dart';
-import 'package:car_service_app/models/service_record.dart';
 import 'package:car_service_app/services/app_localizations.dart';
 import 'package:car_service_app/services/database_service.dart';
 import 'package:car_service_app/services/prediction_logic.dart';
@@ -12,6 +12,7 @@ class DashboardView extends StatefulWidget {
   final VoidCallback onNavigateToServices;
   final VoidCallback onNavigateToHistory;
   final VoidCallback onNavigateToSettings;
+  final Function(String, int) onNavigateToServicesWithData;
   final double todayDistance;
   final bool locationEnabled;
 
@@ -20,6 +21,7 @@ class DashboardView extends StatefulWidget {
     required this.onNavigateToServices,
     required this.onNavigateToHistory,
     required this.onNavigateToSettings,
+    required this.onNavigateToServicesWithData,
     required this.todayDistance,
     required this.locationEnabled,
   });
@@ -29,22 +31,32 @@ class DashboardView extends StatefulWidget {
 }
 
 class _DashboardViewState extends State<DashboardView> {
-  // Services
+  // Servicios
   late final PredictionService _predictionService;
   static final Logger _logger = Logger();
+
+  // Estado de Tabs
+  int _activeTab = 0; // 0 para Próximos, 1 para Recientes
 
   // Futures
   late Future<List<Vehicle>> _vehiclesFuture;
   late Future<List<Map<String, dynamic>>> _predictionsFuture;
   late Future<Vehicle?> _currentVehicleFuture;
-  late Future<List<ServiceRecord>> _recentServicesFuture;
+  late Future<List<Map<String, dynamic>>> _recentServicesFuture;
 
-  // Constants
+  // Constantes
   static const _primaryColor = Color(0xFF2AEFDA);
   static const _secondaryColor = Color(0xFF75A6B1);
   static const _backgroundColor = Colors.transparent;
   static const _textColor = Colors.white;
   static const _grey300 = Color(0xFFE0E0E0);
+
+  // --- ESCALA TIPOGRÁFICA OPTIMIZADA (UX) ---
+  static const double _fsDisplay = 24.0; // Headlines grandes
+  static const double _fsTitle = 20.0; // Títulos de secciones/tabs
+  static const double _fsBody = 15.0; // Texto principal de lectura
+  static const double _fsCaption = 12.0; // Información secundaria
+  static const double _fsCaptionSmall = 10.0; // Información secundaria
 
   @override
   void initState() {
@@ -55,7 +67,9 @@ class _DashboardViewState extends State<DashboardView> {
 
   void _loadData() {
     _vehiclesFuture = DatabaseService.getVehicles();
-    _recentServicesFuture = DatabaseService.getRecentServiceRecords(limit: 5);
+    _recentServicesFuture = DatabaseService.getRecentServiceRecordsWithDetails(
+      limit: 5,
+    );
     _currentVehicleFuture = _loadCurrentVehicle();
   }
 
@@ -118,9 +132,7 @@ class _DashboardViewState extends State<DashboardView> {
             const SizedBox(height: 24),
             _buildLocationCard(),
             const SizedBox(height: 24),
-            _buildUpcomingServicesSection(),
-            const SizedBox(height: 24),
-            _buildRecentServicesSection(),
+            _buildServiceTabsSection(),
             const SizedBox(height: 24),
             _buildQuickActions(),
             const SizedBox(height: 24),
@@ -130,7 +142,6 @@ class _DashboardViewState extends State<DashboardView> {
     );
   }
 
-  // ============ HEADER SECTION ============
   Widget _buildUserInfo(Vehicle vehicle) {
     return Row(
       children: [
@@ -147,15 +158,15 @@ class _DashboardViewState extends State<DashboardView> {
               Text(
                 "Alex Cooper",
                 style: TextStyle(
-                  fontSize: 24,
+                  fontSize: _fsDisplay,
                   fontWeight: FontWeight.bold,
                   color: _textColor,
                 ),
               ),
-              const SizedBox(height: 4),
+              const SizedBox(height: 1),
               Text(
                 "${vehicle.make} ${vehicle.model}",
-                style: TextStyle(fontSize: 16, color: Colors.grey[300]),
+                style: TextStyle(fontSize: _fsCaption, color: Colors.grey[300]),
               ),
             ],
           ),
@@ -209,7 +220,7 @@ class _DashboardViewState extends State<DashboardView> {
             const SizedBox(width: 12),
             _buildServiceInfoCard(
               AppLocalizations.of(context).estimated,
-              "53,000",
+              "353,000",
               AppLocalizations.of(context).km,
             ),
             const SizedBox(width: 12),
@@ -258,7 +269,7 @@ class _DashboardViewState extends State<DashboardView> {
               child: Text(
                 title,
                 style: TextStyle(
-                  fontSize: 10,
+                  fontSize: _fsCaptionSmall,
                   color: Colors.grey[300],
                   fontWeight: FontWeight.w500,
                 ),
@@ -268,7 +279,7 @@ class _DashboardViewState extends State<DashboardView> {
             Text(
               value,
               style: TextStyle(
-                fontSize: 18,
+                fontSize: _fsTitle,
                 fontWeight: FontWeight.bold,
                 color: valueColor ?? _textColor,
                 height: 1.1,
@@ -278,7 +289,7 @@ class _DashboardViewState extends State<DashboardView> {
             Text(
               subtitle,
               style: TextStyle(
-                fontSize: 10,
+                fontSize: _fsCaptionSmall,
                 color: Colors.grey[400],
                 fontWeight: FontWeight.w400,
               ),
@@ -289,44 +300,172 @@ class _DashboardViewState extends State<DashboardView> {
     );
   }
 
-  // ============ LOCATION CARD ============
   Widget _buildLocationCard() {
-    return Card(
-      color: widget.locationEnabled
-          ? Colors.green.withValues(alpha: 0.2)
-          : Colors.orange.withValues(alpha: 0.2),
-      child: Padding(
-        padding: const EdgeInsets.all(16.0),
-        child: Row(
-          children: [
-            Icon(
-              widget.locationEnabled ? Icons.location_on : Icons.location_off,
-              color: widget.locationEnabled ? Colors.green : Colors.orange,
-              size: 28,
+    return Container(
+      width: double.infinity,
+      decoration: BoxDecoration(
+        color: Colors.black.withValues(alpha: 0.3),
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: Colors.white10),
+      ),
+      child: Column(
+        children: [
+          Padding(
+            padding: const EdgeInsets.all(16.0),
+            child: Row(
+              children: [
+                Icon(
+                  widget.locationEnabled
+                      ? Icons.location_on
+                      : Icons.location_off,
+                  color: widget.locationEnabled ? Colors.red : Colors.orange,
+                  size: 24,
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        widget.locationEnabled
+                            ? '${AppLocalizations.of(context).todayDistance}: ${widget.todayDistance.toStringAsFixed(1)} ${AppLocalizations.of(context).km}'
+                            : AppLocalizations.of(context).enableLocation,
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: _fsBody,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
             ),
-            const SizedBox(width: 16),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
+          ),
+          Container(
+            height: 100,
+            margin: const EdgeInsets.only(left: 12, right: 12, bottom: 12),
+            width: double.infinity,
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(15),
+              color: Colors.grey[900],
+            ),
+            child: ClipRRect(
+              borderRadius: BorderRadius.circular(15),
+              child: Stack(
+                fit: StackFit.expand,
                 children: [
-                  Text(
-                    widget.locationEnabled
-                        ? AppLocalizations.of(context).locationTrackingActive
-                        : AppLocalizations.of(context).locationTrackingDisabled,
-                    style: const TextStyle(
-                      color: Colors.white,
-                      fontSize: 16,
-                      fontWeight: FontWeight.bold,
+                  Image.asset(
+                    'assets/images/map_background.png',
+                    fit: BoxFit.cover,
+                    errorBuilder: (context, error, stackTrace) {
+                      return Container(
+                        color: Colors.white10,
+                        child: const Icon(
+                          Icons.map_outlined,
+                          color: Colors.white24,
+                        ),
+                      );
+                    },
+                  ),
+                  Container(color: Colors.black.withValues(alpha: 0.2)),
+                  Center(
+                    child: Stack(
+                      alignment: Alignment.center,
+                      children: [
+                        if (widget.locationEnabled)
+                          TweenAnimationBuilder(
+                            tween: Tween(begin: 0.0, end: 1.0),
+                            duration: const Duration(seconds: 2),
+                            builder: (context, double value, child) {
+                              return Container(
+                                width: 40 * value,
+                                height: 40 * value,
+                                decoration: BoxDecoration(
+                                  shape: BoxShape.circle,
+                                  color: Colors.red.withValues(
+                                    alpha: 1.0 - value,
+                                  ),
+                                ),
+                              );
+                            },
+                          ),
+                        Icon(
+                          Icons.my_location,
+                          color: widget.locationEnabled
+                              ? Colors.red
+                              : Colors.white38,
+                          size: 26,
+                        ),
+                      ],
                     ),
                   ),
-                  const SizedBox(height: 4),
-                  Text(
-                    widget.locationEnabled
-                        ? '${AppLocalizations.of(context).todayDistance}: ${widget.todayDistance.toStringAsFixed(1)} ${AppLocalizations.of(context).km}'
-                        : AppLocalizations.of(context).enableLocation,
-                    style: TextStyle(color: Colors.white70, fontSize: 14),
-                  ),
                 ],
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildServiceTabsSection() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          children: [
+            _buildTabTrigger(0, AppLocalizations.of(context).upcomingServices),
+            const SizedBox(width: 24),
+            _buildTabTrigger(1, AppLocalizations.of(context).recentServices),
+            const Spacer(),
+            if (_activeTab == 1)
+              TextButton(
+                onPressed: widget.onNavigateToHistory,
+                child: Text(
+                  AppLocalizations.of(context).viewAll,
+                  style: const TextStyle(
+                    color: _primaryColor,
+                    fontSize: _fsCaption,
+                  ),
+                ),
+              ),
+          ],
+        ),
+        const SizedBox(height: 16),
+        AnimatedSwitcher(
+          duration: const Duration(milliseconds: 300),
+          child: _activeTab == 0
+              ? _buildUpcomingContent()
+              : _buildRecentContent(),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildTabTrigger(int index, String label) {
+    final bool isActive = _activeTab == index;
+    return GestureDetector(
+      onTap: () => setState(() => _activeTab = index),
+      child: IntrinsicWidth(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Text(
+              label,
+              style: TextStyle(
+                fontSize: _fsTitle,
+                fontWeight: FontWeight.bold,
+                color: isActive ? _textColor : Colors.white38,
+              ),
+            ),
+            const SizedBox(height: 6),
+            AnimatedContainer(
+              duration: const Duration(milliseconds: 250),
+              height: 3,
+              decoration: BoxDecoration(
+                color: isActive ? _primaryColor : Colors.transparent,
+                borderRadius: BorderRadius.circular(2),
               ),
             ),
           ],
@@ -335,57 +474,56 @@ class _DashboardViewState extends State<DashboardView> {
     );
   }
 
-  // ============ UPCOMING SERVICES ============
-  Widget _buildUpcomingServicesSection() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          AppLocalizations.of(context).upcomingServices,
-          style: TextStyle(
-            fontSize: 20,
-            fontWeight: FontWeight.bold,
-            color: _textColor,
-          ),
-        ),
-        const SizedBox(height: 16),
-        FutureBuilder<List<Map<String, dynamic>>>(
-          future: _predictionsFuture,
-          builder: (context, snapshot) {
-            if (snapshot.connectionState == ConnectionState.waiting) {
-              return _buildLoadingCard();
-            } else if (snapshot.hasError) {
-              return _buildErrorCard(
-                AppLocalizations.of(context).errorLoadingData,
-              );
-            } else if (!snapshot.hasData || snapshot.data!.isEmpty) {
-              return _buildEmptyCard(
-                AppLocalizations.of(context).noServiceRecords,
-              );
-            }
-
-            return _buildUpcomingServicesList(snapshot.data!);
-          },
-        ),
-      ],
+  Widget _buildUpcomingContent() {
+    return FutureBuilder<List<Map<String, dynamic>>>(
+      key: const ValueKey('upcoming_future'),
+      future: _predictionsFuture,
+      builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return _buildLoadingCard();
+        } else if (snapshot.hasError) {
+          return _buildErrorCard(AppLocalizations.of(context).errorLoadingData);
+        } else if (!snapshot.hasData || snapshot.data!.isEmpty) {
+          return _buildEmptyCard(AppLocalizations.of(context).noServiceRecords);
+        }
+        return Column(children: snapshot.data!.map(_buildServiceItem).toList());
+      },
     );
   }
 
-  Widget _buildUpcomingServicesList(List<Map<String, dynamic>> services) {
-    return Column(children: services.map(_buildServiceItem).toList());
+  Widget _buildRecentContent() {
+    return FutureBuilder<List<Map<String, dynamic>>>(
+      key: const ValueKey('recent_future'),
+      future: _recentServicesFuture,
+      builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return _buildLoadingCard();
+        } else if (snapshot.hasError) {
+          return _buildErrorCard(
+            AppLocalizations.of(context).errorLoadingHistory,
+          );
+        } else if (!snapshot.hasData || snapshot.data!.isEmpty) {
+          return _buildEmptyCard(AppLocalizations.of(context).noServiceRecords);
+        }
+
+        final services = snapshot.data!
+            .map((map) => ServiceRecordDisplay.fromMap(map))
+            .toList();
+        return Column(children: services.map(_buildServiceCard).toList());
+      },
+    );
   }
 
   Widget _buildServiceItem(Map<String, dynamic> service) {
     final int percentage = service['percentageRemaining'] ?? 0;
 
-    // Determine color based on percentage
     Color getPercentageColor() {
       if (percentage >= 80) {
-        return Colors.red.shade400; // Red for 80-100% (urgent)
+        return Colors.red.shade400;
       } else if (percentage >= 50) {
-        return Colors.orange.shade400; // Orange for 50-79% (intermediate)
+        return Colors.orange.shade400;
       } else {
-        return Colors.green.shade400; // Green for 0-49% (low)
+        return Colors.green.shade400;
       }
     }
 
@@ -404,37 +542,31 @@ class _DashboardViewState extends State<DashboardView> {
                 onNavigateToServices: widget.onNavigateToServices,
                 onNavigateToHistory: widget.onNavigateToHistory,
                 onNavigateToSettings: widget.onNavigateToSettings,
+                onNavigateToServicesWithData:
+                    widget.onNavigateToServicesWithData,
               ),
             ),
           );
         },
         child: Card(
           elevation: 0,
+          margin: EdgeInsets
+              .zero, // Eliminamos el margen externo para alineación total
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(15),
             side: BorderSide(
-              color: isUrgent ? Colors.red.shade400 : _secondaryColor,
+              color: isUrgent ? Colors.red.shade400 : Colors.white10,
               width: isUrgent ? 2 : 1,
             ),
           ),
           color: Colors.black.withValues(alpha: 0.3),
           child: Padding(
-            padding: const EdgeInsets.all(16.0),
+            padding: const EdgeInsets.symmetric(
+              horizontal: 16.0,
+              vertical: 20.0,
+            ), // Ajuste de padding interno
             child: Row(
               children: [
-                Container(
-                  padding: const EdgeInsets.all(8.0),
-                  decoration: BoxDecoration(
-                    color: const Color(0x8074cfde),
-                    borderRadius: BorderRadius.circular(100),
-                  ),
-                  child: Icon(
-                    getIconData(service['icon'] ?? 'default'),
-                    color: isUrgent ? Colors.red.shade400 : Colors.white,
-                    size: 24.0,
-                  ),
-                ),
-                const SizedBox(width: 16),
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -442,7 +574,7 @@ class _DashboardViewState extends State<DashboardView> {
                       Text(
                         service['service'] ?? 'N/A',
                         style: TextStyle(
-                          fontSize: 16,
+                          fontSize: _fsBody,
                           fontWeight: FontWeight.bold,
                           color: isUrgent ? Colors.red.shade400 : Colors.white,
                         ),
@@ -451,39 +583,51 @@ class _DashboardViewState extends State<DashboardView> {
                       Text(
                         '${AppLocalizations.of(context).recommendedAt} ${service['kmToNextService'] ?? 'N/A'} ${AppLocalizations.of(context).km}',
                         style: TextStyle(
-                          fontSize: 14,
-                          color: isUrgent ? Colors.red.shade400 : _grey300,
+                          fontSize: _fsCaption,
+                          color: isUrgent
+                              ? Colors.red.shade400
+                              : Colors.white70,
                         ),
                       ),
                       const SizedBox(height: 2),
                       Text(
                         '${AppLocalizations.of(context).approxIn} ${service['timeRemaining'] ?? 'N/A'} ${service['timeUnit'] ?? ''}',
                         style: TextStyle(
-                          fontSize: 12,
-                          color: isUrgent ? Colors.red.shade400 : _grey300,
+                          fontSize: _fsCaption,
+                          color: isUrgent
+                              ? Colors.red.shade400
+                              : Colors.white70,
                         ),
                       ),
                     ],
                   ),
                 ),
-                Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 12,
-                    vertical: 6,
-                  ),
-                  decoration: BoxDecoration(
-                    color: percentageColor.withValues(alpha: 0.2),
-                    borderRadius: BorderRadius.circular(20),
-                    border: Border.all(color: percentageColor, width: 1.5),
-                  ),
-                  child: Text(
-                    '$percentage%',
-                    style: TextStyle(
-                      fontSize: 14,
-                      fontWeight: FontWeight.bold,
-                      color: percentageColor,
+                const SizedBox(width: 8),
+                Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(8.0),
+                      decoration: BoxDecoration(
+                        color: const Color(0x3374cfde),
+                        borderRadius: BorderRadius.circular(100),
+                      ),
+                      child: Icon(
+                        getIconData(service['icon'] ?? 'default'),
+                        color: isUrgent ? Colors.red.shade400 : Colors.white,
+                        size: 24.0,
+                      ),
                     ),
-                  ),
+                    const SizedBox(height: 6),
+                    Text(
+                      '$percentage%',
+                      style: TextStyle(
+                        fontSize: _fsBody,
+                        fontWeight: FontWeight.bold,
+                        color: percentageColor,
+                      ),
+                    ),
+                  ],
                 ),
               ],
             ),
@@ -493,96 +637,61 @@ class _DashboardViewState extends State<DashboardView> {
     );
   }
 
-  // ============ RECENT SERVICES ============
-  Widget _buildRecentServicesSection() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            Text(
-              AppLocalizations.of(context).recentServices,
-              style: TextStyle(
-                color: Colors.white,
-                fontSize: 20,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-            TextButton(
-              onPressed: () {
-                widget.onNavigateToHistory();
-              },
-              child: Text(
-                AppLocalizations.of(context).viewAll,
-                style: TextStyle(color: _primaryColor),
-              ),
-            ),
-          ],
-        ),
-        const SizedBox(height: 12),
-        FutureBuilder<List<ServiceRecord>>(
-          future: _recentServicesFuture,
-          builder: (context, snapshot) {
-            if (snapshot.connectionState == ConnectionState.waiting) {
-              return _buildLoadingCard();
-            } else if (snapshot.hasError) {
-              return _buildErrorCard(
-                AppLocalizations.of(context).errorLoadingHistory,
-              );
-            } else if (!snapshot.hasData || snapshot.data!.isEmpty) {
-              return _buildEmptyCard(
-                AppLocalizations.of(context).noServiceRecords,
-              );
-            }
-
-            return _buildRecentServicesList(snapshot.data!);
-          },
-        ),
-      ],
-    );
-  }
-
-  Widget _buildRecentServicesList(List<ServiceRecord> services) {
-    return Column(children: services.map(_buildServiceCard).toList());
-  }
-
-  Widget _buildServiceCard(ServiceRecord service) {
+  Widget _buildServiceCard(ServiceRecordDisplay service) {
     return Card(
-      color: Colors.black.withValues(alpha: 0.3),
+      elevation: 0,
       margin: const EdgeInsets.only(bottom: 8),
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(15),
+        side: const BorderSide(color: Colors.white10, width: 1),
+      ),
+      color: Colors.black.withValues(alpha: 0.3),
       child: Padding(
-        padding: const EdgeInsets.all(12.0),
+        padding: const EdgeInsets.all(16.0),
         child: Row(
           children: [
-            Container(
-              width: 40,
-              height: 40,
-              decoration: BoxDecoration(
-                color: Colors.blue.withValues(alpha: 0.2),
-                borderRadius: BorderRadius.circular(6),
-              ),
-              child: const Icon(Icons.build, color: Colors.blue, size: 20),
-            ),
-            const SizedBox(width: 12),
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
+                    service.serviceName ?? '',
+                    style: const TextStyle(
+                      fontSize: _fsBody,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.white,
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
                     '${AppLocalizations.of(context).serviceAt} ${service.mileage} ${AppLocalizations.of(context).km}',
                     style: const TextStyle(
-                      color: Colors.white,
-                      fontSize: 14,
-                      fontWeight: FontWeight.w500,
+                      color: Colors.white70,
+                      fontSize: _fsCaption,
                     ),
                   ),
                   const SizedBox(height: 2),
                   Text(
                     DateFormatter.formatDate(service.date),
-                    style: TextStyle(color: Colors.white70, fontSize: 12),
+                    style: const TextStyle(
+                      color: Colors.white70,
+                      fontSize: _fsCaption,
+                    ),
                   ),
                 ],
+              ),
+            ),
+            const SizedBox(width: 8),
+            Container(
+              padding: const EdgeInsets.all(8.0),
+              decoration: BoxDecoration(
+                color: const Color(0x3374cfde),
+                borderRadius: BorderRadius.circular(100),
+              ),
+              child: Icon(
+                getIconData(service.serviceName ?? ''),
+                color: Colors.white,
+                size: 24.0,
               ),
             ),
           ],
@@ -591,16 +700,15 @@ class _DashboardViewState extends State<DashboardView> {
     );
   }
 
-  // ============ QUICK ACTIONS ============
   Widget _buildQuickActions() {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
           AppLocalizations.of(context).quickActions,
-          style: TextStyle(
+          style: const TextStyle(
             color: Colors.white,
-            fontSize: 20,
+            fontSize: _fsTitle,
             fontWeight: FontWeight.bold,
           ),
         ),
@@ -610,7 +718,7 @@ class _DashboardViewState extends State<DashboardView> {
           runSpacing: 12,
           children: [
             SizedBox(
-              width: MediaQuery.of(context).size.width * 0.4,
+              width: MediaQuery.of(context).size.width * 0.43,
               child: _buildActionButton(
                 icon: Icons.add_circle_outline,
                 title: AppLocalizations.of(context).addService,
@@ -619,30 +727,30 @@ class _DashboardViewState extends State<DashboardView> {
               ),
             ),
             SizedBox(
-              width: MediaQuery.of(context).size.width * 0.4,
+              width: MediaQuery.of(context).size.width * 0.43,
               child: _buildActionButton(
                 icon: Icons.directions_car,
                 title: AppLocalizations.of(context).addVehicle,
                 color: Colors.blue,
-                onTap: () => widget.onNavigateToSettings(),
+                onTap: widget.onNavigateToSettings,
               ),
             ),
             SizedBox(
-              width: MediaQuery.of(context).size.width * 0.4,
+              width: MediaQuery.of(context).size.width * 0.43,
               child: _buildActionButton(
                 icon: Icons.history,
                 title: AppLocalizations.of(context).viewHistory,
                 color: Colors.orange,
-                onTap: () => widget.onNavigateToHistory(),
+                onTap: widget.onNavigateToHistory,
               ),
             ),
             SizedBox(
-              width: MediaQuery.of(context).size.width * 0.4,
+              width: MediaQuery.of(context).size.width * 0.43,
               child: _buildActionButton(
                 icon: Icons.settings,
                 title: AppLocalizations.of(context).settings,
                 color: Colors.purple,
-                onTap: () => widget.onNavigateToSettings(),
+                onTap: widget.onNavigateToSettings,
               ),
             ),
           ],
@@ -662,30 +770,34 @@ class _DashboardViewState extends State<DashboardView> {
       child: InkWell(
         onTap: onTap,
         borderRadius: BorderRadius.circular(8),
-        child: Padding(
-          padding: const EdgeInsets.all(12.0),
-          child: Row(
-            children: [
-              Icon(icon, color: color, size: 20),
-              const SizedBox(width: 8),
-              Expanded(
-                child: Text(
-                  title,
-                  style: const TextStyle(
-                    color: Colors.white,
-                    fontSize: 14,
-                    fontWeight: FontWeight.w500,
+        child: SizedBox(
+          height: 60,
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 8.0),
+            child: Row(
+              children: [
+                Icon(icon, color: color, size: 20),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    title,
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: _fsCaption,
+                      fontWeight: FontWeight.w500,
+                    ),
                   ),
                 ),
-              ),
-            ],
+              ],
+            ),
           ),
         ),
       ),
     );
   }
 
-  // ============ UTILITY WIDGETS ============
   Widget _buildLoadingIndicator() {
     return const Center(child: CircularProgressIndicator(color: _textColor));
   }
@@ -699,11 +811,11 @@ class _DashboardViewState extends State<DashboardView> {
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              CircularProgressIndicator(color: _primaryColor),
+              const CircularProgressIndicator(color: _primaryColor),
               const SizedBox(height: 16),
               Text(
                 AppLocalizations.of(context).loadingServices,
-                style: TextStyle(color: _textColor),
+                style: const TextStyle(color: _textColor),
               ),
             ],
           ),
@@ -742,11 +854,11 @@ class _DashboardViewState extends State<DashboardView> {
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Icon(Icons.info_outline, color: _grey300, size: 48),
+              const Icon(Icons.info_outline, color: _grey300, size: 48),
               const SizedBox(height: 16),
               Text(
                 message,
-                style: TextStyle(color: Colors.white70),
+                style: const TextStyle(color: Colors.white70),
                 textAlign: TextAlign.center,
               ),
             ],
@@ -791,7 +903,7 @@ class _DashboardViewState extends State<DashboardView> {
           const SizedBox(height: 16),
           Text(
             AppLocalizations.of(context).noVehicleFound,
-            style: const TextStyle(color: Colors.white, fontSize: 18),
+            style: const TextStyle(color: Colors.white, fontSize: _fsTitle),
           ),
           const SizedBox(height: 8),
           Text(

@@ -6,9 +6,9 @@ class RegistrationService {
 
   // Verificar si el registro está completado
   static Future<bool> isRegistrationCompleted() async {
-    // final prefs = await SharedPreferences.getInstance();
-    // return prefs.getBool(_registrationCompletedKey) ?? false;
-    return false;
+    final prefs = await SharedPreferences.getInstance();
+    return prefs.getBool(_registrationCompletedKey) ?? false;
+    // return false;
   }
 
   // Marcar el registro como completado

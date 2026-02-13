@@ -127,6 +127,10 @@ class AppLocalizations {
   String get status => _getString('status');
   String get pending => _getString('pending');
   String get dueSoon => _getString('due_soon');
+  String get markAsDone => "Marcar como Realizado";
+  String servicePrefilled(String serviceName) => _getString(
+    'service_prefilled',
+  ).replaceFirst('{serviceName}', serviceName);
 }
 
 class _AppLocalizationsDelegate
