@@ -1,7 +1,7 @@
+import 'package:car_service_app/models/service_record_display.dart';
 import 'package:flutter/material.dart';
 import 'package:logger/logger.dart';
 import 'package:car_service_app/models/vehicle.dart';
-import 'package:car_service_app/models/service_record.dart';
 import 'package:car_service_app/services/app_localizations.dart';
 import 'package:car_service_app/services/database_service.dart';
 import 'package:car_service_app/services/prediction_logic.dart';
@@ -35,11 +35,14 @@ class _DashboardViewState extends State<DashboardView> {
   late final PredictionService _predictionService;
   static final Logger _logger = Logger();
 
+  // Estado de Tabs
+  int _activeTab = 0; // 0 para Próximos, 1 para Recientes
+
   // Futures
   late Future<List<Vehicle>> _vehiclesFuture;
   late Future<List<Map<String, dynamic>>> _predictionsFuture;
   late Future<Vehicle?> _currentVehicleFuture;
-  late Future<List<ServiceRecord>> _recentServicesFuture;
+  late Future<List<Map<String, dynamic>>> _recentServicesFuture;
 
   // Constantes
   static const _primaryColor = Color(0xFF2AEFDA);
@@ -47,6 +50,13 @@ class _DashboardViewState extends State<DashboardView> {
   static const _backgroundColor = Colors.transparent;
   static const _textColor = Colors.white;
   static const _grey300 = Color(0xFFE0E0E0);
+
+  // --- ESCALA TIPOGRÁFICA OPTIMIZADA (UX) ---
+  static const double _fsDisplay = 24.0; // Headlines grandes
+  static const double _fsTitle = 20.0; // Títulos de secciones/tabs
+  static const double _fsBody = 15.0; // Texto principal de lectura
+  static const double _fsCaption = 12.0; // Información secundaria
+  static const double _fsCaptionSmall = 10.0; // Información secundaria
 
   @override
   void initState() {
@@ -57,7 +67,9 @@ class _DashboardViewState extends State<DashboardView> {
 
   void _loadData() {
     _vehiclesFuture = DatabaseService.getVehicles();
-    _recentServicesFuture = DatabaseService.getRecentServiceRecords(limit: 5);
+    _recentServicesFuture = DatabaseService.getRecentServiceRecordsWithDetails(
+      limit: 5,
+    );
     _currentVehicleFuture = _loadCurrentVehicle();
   }
 
@@ -120,9 +132,7 @@ class _DashboardViewState extends State<DashboardView> {
             const SizedBox(height: 24),
             _buildLocationCard(),
             const SizedBox(height: 24),
-            _buildUpcomingServicesSection(),
-            const SizedBox(height: 24),
-            _buildRecentServicesSection(),
+            _buildServiceTabsSection(),
             const SizedBox(height: 24),
             _buildQuickActions(),
             const SizedBox(height: 24),
@@ -148,7 +158,7 @@ class _DashboardViewState extends State<DashboardView> {
               Text(
                 "Alex Cooper",
                 style: TextStyle(
-                  fontSize: 24,
+                  fontSize: _fsDisplay,
                   fontWeight: FontWeight.bold,
                   color: _textColor,
                 ),
@@ -156,7 +166,7 @@ class _DashboardViewState extends State<DashboardView> {
               const SizedBox(height: 1),
               Text(
                 "${vehicle.make} ${vehicle.model}",
-                style: TextStyle(fontSize: 12, color: Colors.grey[300]),
+                style: TextStyle(fontSize: _fsCaption, color: Colors.grey[300]),
               ),
             ],
           ),
@@ -259,7 +269,7 @@ class _DashboardViewState extends State<DashboardView> {
               child: Text(
                 title,
                 style: TextStyle(
-                  fontSize: 10,
+                  fontSize: _fsCaptionSmall,
                   color: Colors.grey[300],
                   fontWeight: FontWeight.w500,
                 ),
@@ -269,7 +279,7 @@ class _DashboardViewState extends State<DashboardView> {
             Text(
               value,
               style: TextStyle(
-                fontSize: 18,
+                fontSize: _fsTitle,
                 fontWeight: FontWeight.bold,
                 color: valueColor ?? _textColor,
                 height: 1.1,
@@ -279,7 +289,7 @@ class _DashboardViewState extends State<DashboardView> {
             Text(
               subtitle,
               style: TextStyle(
-                fontSize: 10,
+                fontSize: _fsCaptionSmall,
                 color: Colors.grey[400],
                 fontWeight: FontWeight.w400,
               ),
@@ -322,7 +332,7 @@ class _DashboardViewState extends State<DashboardView> {
                             : AppLocalizations.of(context).enableLocation,
                         style: const TextStyle(
                           color: Colors.white,
-                          fontSize: 15,
+                          fontSize: _fsBody,
                           fontWeight: FontWeight.w500,
                         ),
                       ),
@@ -332,14 +342,13 @@ class _DashboardViewState extends State<DashboardView> {
               ],
             ),
           ),
-          // Mapa de fondo rectangular con Stack para mayor control
           Container(
             height: 100,
             margin: const EdgeInsets.only(left: 12, right: 12, bottom: 12),
             width: double.infinity,
             decoration: BoxDecoration(
               borderRadius: BorderRadius.circular(15),
-              color: Colors.grey[900], // Fondo de respaldo si la imagen falla
+              color: Colors.grey[900],
             ),
             child: ClipRRect(
               borderRadius: BorderRadius.circular(15),
@@ -400,43 +409,109 @@ class _DashboardViewState extends State<DashboardView> {
     );
   }
 
-  Widget _buildUpcomingServicesSection() {
+  Widget _buildServiceTabsSection() {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(
-          AppLocalizations.of(context).upcomingServices,
-          style: TextStyle(
-            fontSize: 20,
-            fontWeight: FontWeight.bold,
-            color: _textColor,
-          ),
+        Row(
+          children: [
+            _buildTabTrigger(0, AppLocalizations.of(context).upcomingServices),
+            const SizedBox(width: 24),
+            _buildTabTrigger(1, AppLocalizations.of(context).recentServices),
+            const Spacer(),
+            if (_activeTab == 1)
+              TextButton(
+                onPressed: widget.onNavigateToHistory,
+                child: Text(
+                  AppLocalizations.of(context).viewAll,
+                  style: const TextStyle(
+                    color: _primaryColor,
+                    fontSize: _fsCaption,
+                  ),
+                ),
+              ),
+          ],
         ),
         const SizedBox(height: 16),
-        FutureBuilder<List<Map<String, dynamic>>>(
-          future: _predictionsFuture,
-          builder: (context, snapshot) {
-            if (snapshot.connectionState == ConnectionState.waiting) {
-              return _buildLoadingCard();
-            } else if (snapshot.hasError) {
-              return _buildErrorCard(
-                AppLocalizations.of(context).errorLoadingData,
-              );
-            } else if (!snapshot.hasData || snapshot.data!.isEmpty) {
-              return _buildEmptyCard(
-                AppLocalizations.of(context).noServiceRecords,
-              );
-            }
-
-            return _buildUpcomingServicesList(snapshot.data!);
-          },
+        AnimatedSwitcher(
+          duration: const Duration(milliseconds: 300),
+          child: _activeTab == 0
+              ? _buildUpcomingContent()
+              : _buildRecentContent(),
         ),
       ],
     );
   }
 
-  Widget _buildUpcomingServicesList(List<Map<String, dynamic>> services) {
-    return Column(children: services.map(_buildServiceItem).toList());
+  Widget _buildTabTrigger(int index, String label) {
+    final bool isActive = _activeTab == index;
+    return GestureDetector(
+      onTap: () => setState(() => _activeTab = index),
+      child: IntrinsicWidth(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Text(
+              label,
+              style: TextStyle(
+                fontSize: _fsTitle,
+                fontWeight: FontWeight.bold,
+                color: isActive ? _textColor : Colors.white38,
+              ),
+            ),
+            const SizedBox(height: 6),
+            AnimatedContainer(
+              duration: const Duration(milliseconds: 250),
+              height: 3,
+              decoration: BoxDecoration(
+                color: isActive ? _primaryColor : Colors.transparent,
+                borderRadius: BorderRadius.circular(2),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildUpcomingContent() {
+    return FutureBuilder<List<Map<String, dynamic>>>(
+      key: const ValueKey('upcoming_future'),
+      future: _predictionsFuture,
+      builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return _buildLoadingCard();
+        } else if (snapshot.hasError) {
+          return _buildErrorCard(AppLocalizations.of(context).errorLoadingData);
+        } else if (!snapshot.hasData || snapshot.data!.isEmpty) {
+          return _buildEmptyCard(AppLocalizations.of(context).noServiceRecords);
+        }
+        return Column(children: snapshot.data!.map(_buildServiceItem).toList());
+      },
+    );
+  }
+
+  Widget _buildRecentContent() {
+    return FutureBuilder<List<Map<String, dynamic>>>(
+      key: const ValueKey('recent_future'),
+      future: _recentServicesFuture,
+      builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return _buildLoadingCard();
+        } else if (snapshot.hasError) {
+          return _buildErrorCard(
+            AppLocalizations.of(context).errorLoadingHistory,
+          );
+        } else if (!snapshot.hasData || snapshot.data!.isEmpty) {
+          return _buildEmptyCard(AppLocalizations.of(context).noServiceRecords);
+        }
+
+        final services = snapshot.data!
+            .map((map) => ServiceRecordDisplay.fromMap(map))
+            .toList();
+        return Column(children: services.map(_buildServiceCard).toList());
+      },
+    );
   }
 
   Widget _buildServiceItem(Map<String, dynamic> service) {
@@ -494,7 +569,7 @@ class _DashboardViewState extends State<DashboardView> {
                       Text(
                         service['service'] ?? 'N/A',
                         style: TextStyle(
-                          fontSize: 16,
+                          fontSize: _fsBody,
                           fontWeight: FontWeight.bold,
                           color: isUrgent ? Colors.red.shade400 : Colors.white,
                         ),
@@ -503,7 +578,7 @@ class _DashboardViewState extends State<DashboardView> {
                       Text(
                         '${AppLocalizations.of(context).recommendedAt} ${service['kmToNextService'] ?? 'N/A'} ${AppLocalizations.of(context).km}',
                         style: TextStyle(
-                          fontSize: 12,
+                          fontSize: _fsCaption,
                           color: isUrgent
                               ? Colors.red.shade400
                               : Colors.white70,
@@ -513,7 +588,7 @@ class _DashboardViewState extends State<DashboardView> {
                       Text(
                         '${AppLocalizations.of(context).approxIn} ${service['timeRemaining'] ?? 'N/A'} ${service['timeUnit'] ?? ''}',
                         style: TextStyle(
-                          fontSize: 12,
+                          fontSize: _fsCaption,
                           color: isUrgent
                               ? Colors.red.shade400
                               : Colors.white70,
@@ -542,7 +617,7 @@ class _DashboardViewState extends State<DashboardView> {
                     Text(
                       '$percentage%',
                       style: TextStyle(
-                        fontSize: 14,
+                        fontSize: _fsBody,
                         fontWeight: FontWeight.bold,
                         color: percentageColor,
                       ),
@@ -557,95 +632,61 @@ class _DashboardViewState extends State<DashboardView> {
     );
   }
 
-  Widget _buildRecentServicesSection() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            Text(
-              AppLocalizations.of(context).recentServices,
-              style: const TextStyle(
-                color: Colors.white,
-                fontSize: 20,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-            TextButton(
-              onPressed: () {
-                widget.onNavigateToHistory();
-              },
-              child: Text(
-                AppLocalizations.of(context).viewAll,
-                style: const TextStyle(color: _primaryColor),
-              ),
-            ),
-          ],
-        ),
-        const SizedBox(height: 12),
-        FutureBuilder<List<ServiceRecord>>(
-          future: _recentServicesFuture,
-          builder: (context, snapshot) {
-            if (snapshot.connectionState == ConnectionState.waiting) {
-              return _buildLoadingCard();
-            } else if (snapshot.hasError) {
-              return _buildErrorCard(
-                AppLocalizations.of(context).errorLoadingHistory,
-              );
-            } else if (!snapshot.hasData || snapshot.data!.isEmpty) {
-              return _buildEmptyCard(
-                AppLocalizations.of(context).noServiceRecords,
-              );
-            }
-
-            return _buildRecentServicesList(snapshot.data!);
-          },
-        ),
-      ],
-    );
-  }
-
-  Widget _buildRecentServicesList(List<ServiceRecord> services) {
-    return Column(children: services.map(_buildServiceCard).toList());
-  }
-
-  Widget _buildServiceCard(ServiceRecord service) {
+  Widget _buildServiceCard(ServiceRecordDisplay service) {
     return Card(
+      elevation: 0,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(15),
+        side: const BorderSide(color: Colors.white10, width: 1),
+      ),
       color: Colors.black.withValues(alpha: 0.3),
       margin: const EdgeInsets.only(bottom: 8),
       child: Padding(
-        padding: const EdgeInsets.all(12.0),
+        padding: const EdgeInsets.all(16.0),
         child: Row(
           children: [
-            Container(
-              width: 40,
-              height: 40,
-              decoration: BoxDecoration(
-                color: Colors.blue.withValues(alpha: 0.2),
-                borderRadius: BorderRadius.circular(6),
-              ),
-              child: const Icon(Icons.build, color: Colors.blue, size: 20),
-            ),
-            const SizedBox(width: 12),
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
+                    service.serviceName ?? '',
+                    style: const TextStyle(
+                      fontSize: _fsBody,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.white,
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
                     '${AppLocalizations.of(context).serviceAt} ${service.mileage} ${AppLocalizations.of(context).km}',
                     style: const TextStyle(
-                      color: Colors.white,
-                      fontSize: 14,
-                      fontWeight: FontWeight.w500,
+                      color: Colors.white70,
+                      fontSize: _fsCaption,
                     ),
                   ),
                   const SizedBox(height: 2),
                   Text(
                     DateFormatter.formatDate(service.date),
-                    style: const TextStyle(color: Colors.white70, fontSize: 12),
+                    style: const TextStyle(
+                      color: Colors.white70,
+                      fontSize: _fsCaption,
+                    ),
                   ),
                 ],
+              ),
+            ),
+            const SizedBox(width: 8),
+            Container(
+              padding: const EdgeInsets.all(8.0),
+              decoration: BoxDecoration(
+                color: const Color(0x3374cfde),
+                borderRadius: BorderRadius.circular(100),
+              ),
+              child: Icon(
+                getIconData(service.serviceName ?? ''),
+                color: Colors.white,
+                size: 24.0,
               ),
             ),
           ],
@@ -662,7 +703,7 @@ class _DashboardViewState extends State<DashboardView> {
           AppLocalizations.of(context).quickActions,
           style: const TextStyle(
             color: Colors.white,
-            fontSize: 20,
+            fontSize: _fsTitle,
             fontWeight: FontWeight.bold,
           ),
         ),
@@ -725,10 +766,9 @@ class _DashboardViewState extends State<DashboardView> {
         onTap: onTap,
         borderRadius: BorderRadius.circular(8),
         child: SizedBox(
-          height:
-              60, // ALTURA AJUSTADA: Todos los botones tendrán esta altura fija
+          height: 60,
           child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 12.0),
+            padding: const EdgeInsets.symmetric(horizontal: 8.0),
             child: Row(
               children: [
                 Icon(icon, color: color, size: 20),
@@ -740,7 +780,7 @@ class _DashboardViewState extends State<DashboardView> {
                     overflow: TextOverflow.ellipsis,
                     style: const TextStyle(
                       color: Colors.white,
-                      fontSize: 13,
+                      fontSize: _fsCaption,
                       fontWeight: FontWeight.w500,
                     ),
                   ),
@@ -858,7 +898,7 @@ class _DashboardViewState extends State<DashboardView> {
           const SizedBox(height: 16),
           Text(
             AppLocalizations.of(context).noVehicleFound,
-            style: const TextStyle(color: Colors.white, fontSize: 18),
+            style: const TextStyle(color: Colors.white, fontSize: _fsTitle),
           ),
           const SizedBox(height: 8),
           Text(
