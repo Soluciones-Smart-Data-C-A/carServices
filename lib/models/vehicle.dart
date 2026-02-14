@@ -8,7 +8,7 @@ class Vehicle {
   final int currentMileage;
   final DateTime lastServiceDate;
   final int lastServiceMileage;
-  final String? imageUrl; // <--- Nuevo campo para la URL/ruta de la imagen
+  final String? imageUrl;
 
   Vehicle({
     this.id,

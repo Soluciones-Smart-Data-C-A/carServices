@@ -20,33 +20,98 @@ class Servicesdetails extends StatelessWidget {
     required this.onNavigateToServicesWithData,
   });
 
-  // Constants
+  // Constants (colores fijos que no cambian con el tema)
   static const _primaryColor = Color(0xFF2AEFDA);
   static const _secondaryColor = Color(0xFF75A6B1);
-  static const _textColor = Colors.white;
+
+  // Método para obtener colores según el tema
+  Color _getTextColor(BuildContext context) {
+    return Theme.of(context).brightness == Brightness.dark
+        ? Colors.white
+        : Colors.black87;
+  }
+
+  Color _getSecondaryTextColor(BuildContext context) {
+    return Theme.of(context).brightness == Brightness.dark
+        ? Colors.grey[300]!
+        : Colors.grey[600]!;
+  }
+
+  Color _getCardColor(BuildContext context) {
+    return Theme.of(context).brightness == Brightness.dark
+        ? Colors.black.withValues(alpha: 0.3)
+        : Colors.white;
+  }
+
+  Color _getBorderColor(BuildContext context) {
+    return Theme.of(context).brightness == Brightness.dark
+        ? Colors.white10
+        : Colors.grey.shade300;
+  }
+
+  Color _getBackgroundGradientColor1(BuildContext context) {
+    return Theme.of(context).brightness == Brightness.dark
+        ? const Color(0xFF07303D)
+        : Colors.grey[100]!;
+  }
+
+  Color _getBackgroundGradientColor2(BuildContext context) {
+    return Theme.of(context).brightness == Brightness.dark
+        ? const Color(0xFF040D0F)
+        : Colors.grey[300]!;
+  }
+
+  Color _getBottomNavBarColor(BuildContext context) {
+    return Theme.of(context).brightness == Brightness.dark
+        ? const Color(0xFF10162A)
+        : Colors.white;
+  }
+
+  Color _getBottomNavBarUnselectedColor(BuildContext context) {
+    return Theme.of(context).brightness == Brightness.dark
+        ? Colors.white54
+        : Colors.black54;
+  }
 
   Widget _buildServiceInfoCard(
+    BuildContext context,
     String title,
     String value,
     String subtitle, {
     Color? valueColor,
   }) {
+    final textColor = _getTextColor(context);
+    final secondaryTextColor = _getSecondaryTextColor(context);
+    final isDarkMode = Theme.of(context).brightness == Brightness.dark;
+
     return Expanded(
       child: Container(
         padding: const EdgeInsets.all(8),
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(8),
-          gradient: const RadialGradient(
-            center: Alignment.center,
-            radius: 2.5,
-            colors: [
-              Color.fromARGB(255, 13, 20, 27),
-              Color.fromARGB(255, 36, 55, 77),
-              Color.fromARGB(255, 111, 136, 160),
-              Color.fromARGB(255, 255, 255, 255),
-            ],
-            stops: [0.1, 0.3, 0.7, 1.0],
-          ),
+          gradient: isDarkMode
+              ? const RadialGradient(
+                  center: Alignment.center,
+                  radius: 2.5,
+                  colors: [
+                    Color.fromARGB(255, 13, 20, 27),
+                    Color.fromARGB(255, 36, 55, 77),
+                    Color.fromARGB(255, 111, 136, 160),
+                    Color.fromARGB(255, 255, 255, 255),
+                  ],
+                  stops: [0.1, 0.3, 0.7, 1.0],
+                )
+              : RadialGradient(
+                  center: Alignment.center,
+                  radius: 2.5,
+                  colors: [
+                    Colors.grey.shade200,
+                    Colors.grey.shade300,
+                    Colors.grey.shade400,
+                    Colors.white,
+                  ],
+                  stops: const [0.1, 0.3, 0.7, 1.0],
+                ),
           border: Border.all(
             color: _secondaryColor.withValues(alpha: 0.4),
             width: 1.0,
@@ -60,7 +125,7 @@ class Servicesdetails extends StatelessWidget {
                 title,
                 style: TextStyle(
                   fontSize: 10,
-                  color: Colors.grey[300],
+                  color: secondaryTextColor,
                   fontWeight: FontWeight.w500,
                 ),
               ),
@@ -71,7 +136,7 @@ class Servicesdetails extends StatelessWidget {
               style: TextStyle(
                 fontSize: 18,
                 fontWeight: FontWeight.bold,
-                color: valueColor ?? _textColor,
+                color: valueColor ?? textColor,
                 height: 1.1,
               ),
             ),
@@ -80,7 +145,7 @@ class Servicesdetails extends StatelessWidget {
               subtitle,
               style: TextStyle(
                 fontSize: 10,
-                color: Colors.grey[400],
+                color: secondaryTextColor,
                 fontWeight: FontWeight.w400,
               ),
             ),
@@ -90,7 +155,10 @@ class Servicesdetails extends StatelessWidget {
     );
   }
 
-  Widget _buildServiceInfoSection(AppLocalizations localizations) {
+  Widget _buildServiceInfoSection(
+    BuildContext context,
+    AppLocalizations localizations,
+  ) {
     final bool isDue = serviceDetails['isDue'] == true;
     final statusColor = isDue ? Colors.red.shade200 : Colors.yellow.shade200;
     final statusText = isDue ? localizations.dueSoon : localizations.pending;
@@ -98,18 +166,21 @@ class Servicesdetails extends StatelessWidget {
     return Row(
       children: [
         _buildServiceInfoCard(
+          context,
           localizations.nextService,
           "${MapUtils.getInt(serviceDetails, 'kmToNextService')}",
           localizations.km,
         ),
         const SizedBox(width: 8),
         _buildServiceInfoCard(
+          context,
           localizations.remaining,
           "${MapUtils.getInt(serviceDetails, 'timeRemaining')}",
           MapUtils.getString(serviceDetails, 'timeUnit'),
         ),
         const SizedBox(width: 8),
         _buildServiceInfoCard(
+          context,
           localizations.status,
           statusText,
           "",
@@ -185,7 +256,11 @@ class Servicesdetails extends StatelessWidget {
         child: Row(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            const Icon(Icons.check_circle_outline, size: 20),
+            const Icon(
+              Icons.check_circle_outline,
+              size: 20,
+              color: Colors.white,
+            ),
             const SizedBox(width: 8),
             Text(
               localizations.markAsDone,
@@ -222,13 +297,14 @@ class Servicesdetails extends StatelessWidget {
     return 0; // 0 significa "no encontrado"
   }
 
-  Widget _buildVehicleImageWithProgress() {
+  Widget _buildVehicleImageWithProgress(BuildContext context) {
     final int percentage = MapUtils.getInt(
       serviceDetails,
       'percentageRemaining',
     );
     final double imageHeight = 400;
     final double gradientTop = (1.0 - (percentage / 100)) * imageHeight;
+    final textColor = _getTextColor(context);
 
     Color getProgressColor() {
       if (percentage >= 80) {
@@ -250,6 +326,9 @@ class Servicesdetails extends StatelessWidget {
             'assets/images/chery_arauca.png',
             fit: BoxFit.contain,
             height: imageHeight,
+            errorBuilder: (context, error, stackTrace) {
+              return Icon(Icons.directions_car, size: 150, color: textColor);
+            },
           ),
         ),
         Positioned(
@@ -294,13 +373,18 @@ class Servicesdetails extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final localizations = AppLocalizations.of(context);
+    final textColor = _getTextColor(context);
+    final backgroundColor1 = _getBackgroundGradientColor1(context);
+    final backgroundColor2 = _getBackgroundGradientColor2(context);
+    final bottomNavColor = _getBottomNavBarColor(context);
+    final unselectedColor = _getBottomNavBarUnselectedColor(context);
 
     return Container(
-      decoration: const BoxDecoration(
+      decoration: BoxDecoration(
         gradient: LinearGradient(
           begin: Alignment.topCenter,
           end: Alignment.bottomCenter,
-          colors: [Color(0xFF07303D), Color(0xFF040D0F)],
+          colors: [backgroundColor1, backgroundColor2],
         ),
       ),
       child: Scaffold(
@@ -309,7 +393,7 @@ class Servicesdetails extends StatelessWidget {
           backgroundColor: Colors.transparent,
           elevation: 0,
           leading: IconButton(
-            icon: const Icon(Icons.arrow_back_ios, color: Colors.white),
+            icon: Icon(Icons.arrow_back_ios, color: textColor),
             onPressed: () => Navigator.pop(context),
           ),
           title: Text(
@@ -318,8 +402,8 @@ class Servicesdetails extends StatelessWidget {
               'service',
               defaultValue: localizations.serviceDetails,
             ),
-            style: const TextStyle(
-              color: Colors.white,
+            style: TextStyle(
+              color: textColor,
               fontSize: 24,
               fontWeight: FontWeight.bold,
             ),
@@ -330,59 +414,64 @@ class Servicesdetails extends StatelessWidget {
           padding: const EdgeInsets.all(16.0),
           child: Column(
             children: [
-              _buildVehicleImageWithProgress(),
+              _buildVehicleImageWithProgress(context),
               const SizedBox(height: 20),
               Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
                     localizations.serviceInformation,
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 20,
                       fontWeight: FontWeight.bold,
-                      color: _textColor,
+                      color: textColor,
                     ),
                   ),
                   const SizedBox(height: 16),
-                  _buildServiceInfoSection(localizations),
+                  _buildServiceInfoSection(context, localizations),
                   _buildMarkAsDoneButton(context, localizations),
                 ],
               ),
             ],
           ),
         ),
-        bottomNavigationBar: _buildBottomNavigationBar(context),
+        bottomNavigationBar: _buildBottomNavigationBar(
+          context,
+          bottomNavColor,
+          unselectedColor,
+        ),
       ),
     );
   }
 
-  Widget _buildBottomNavigationBar(BuildContext context) {
+  Widget _buildBottomNavigationBar(
+    BuildContext context,
+    Color backgroundColor,
+    Color unselectedColor,
+  ) {
     return BottomNavigationBar(
       type: BottomNavigationBarType.fixed,
-      backgroundColor: const Color(0xFF10162A),
+      backgroundColor: backgroundColor,
       selectedItemColor: _primaryColor,
-      unselectedItemColor: Colors.white54,
+      unselectedItemColor: unselectedColor,
       showUnselectedLabels: true,
       currentIndex: 0,
       onTap: (index) {
         _handleNavigation(context, index);
       },
-      items: [
+      items: const [
+        BottomNavigationBarItem(icon: Icon(Icons.home_outlined), label: 'Home'),
         BottomNavigationBarItem(
-          icon: const Icon(Icons.home_outlined),
-          label: AppLocalizations.of(context).home,
+          icon: Icon(Icons.add_outlined),
+          label: 'Services',
         ),
         BottomNavigationBarItem(
-          icon: const Icon(Icons.add_outlined),
-          label: AppLocalizations.of(context).services,
+          icon: Icon(Icons.history_outlined),
+          label: 'History',
         ),
         BottomNavigationBarItem(
-          icon: const Icon(Icons.history_outlined),
-          label: AppLocalizations.of(context).history,
-        ),
-        BottomNavigationBarItem(
-          icon: const Icon(Icons.settings_outlined),
-          label: AppLocalizations.of(context).settings,
+          icon: Icon(Icons.settings_outlined),
+          label: 'Settings',
         ),
       ],
     );
