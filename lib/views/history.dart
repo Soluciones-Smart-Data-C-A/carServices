@@ -13,13 +13,17 @@ class HistoryView extends StatefulWidget {
 }
 
 class HistoryViewState extends State<HistoryView> {
-  static const _backgroundColor = Colors.transparent;
-  static const _primaryColor = Color(0xFF2AEFDA);
-  static const _secondaryColor = Color(0xFF75A6B1);
-  static const _textColor = Colors.white;
-  static const _grey300 = Color(0xFFE0E0E0);
-  static const _grey400 = Color(0xFFBDBDBD);
-  static const _grey600 = Color(0xFF757575);
+  // Constantes de color que se adaptarán al tema
+  late Color _primaryColor;
+  late Color _secondaryColor;
+  late Color _backgroundColor;
+  late Color _textColor;
+  late Color _grey300;
+  late Color _grey400;
+  late Color _grey600;
+  late Color _cardColor;
+  late Color _borderColor;
+  late Color _dialogBackgroundColor;
 
   late Future<List<Map<String, dynamic>>> _serviceRecordsFuture;
 
@@ -27,6 +31,24 @@ class HistoryViewState extends State<HistoryView> {
   void initState() {
     super.initState();
     _serviceRecordsFuture = DatabaseService.getServiceRecordsWithDetails();
+  }
+
+  // Método para actualizar colores según el tema
+  void _updateThemeColors(BuildContext context) {
+    final isDarkMode = Theme.of(context).brightness == Brightness.dark;
+
+    _primaryColor = const Color(0xFF2AEFDA);
+    _secondaryColor = const Color(0xFF75A6B1);
+    _backgroundColor = Colors.transparent;
+    _textColor = isDarkMode ? Colors.white : Colors.black87;
+    _grey300 = isDarkMode ? const Color(0xFFE0E0E0) : Colors.black54;
+    _grey400 = isDarkMode ? const Color(0xFFBDBDBD) : Colors.black45;
+    _grey600 = isDarkMode ? const Color(0xFF757575) : Colors.black38;
+    _cardColor = isDarkMode
+        ? Colors.black.withValues(alpha: 0.3)
+        : Colors.white;
+    _borderColor = isDarkMode ? Colors.white10 : Colors.grey.shade300;
+    _dialogBackgroundColor = isDarkMode ? Colors.grey[900]! : Colors.white;
   }
 
   void _refreshData() {
@@ -57,32 +79,25 @@ class HistoryViewState extends State<HistoryView> {
       margin: const EdgeInsets.symmetric(vertical: 8),
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(12),
-        side: BorderSide(
-          color: _secondaryColor.withValues(alpha: 0.5),
-          width: 1,
-        ),
+        side: BorderSide(color: _borderColor, width: 1),
       ),
-      color: Colors.black.withValues(alpha: 0.3),
+      color: _cardColor,
       child: ListTile(
         contentPadding: const EdgeInsets.all(16),
         leading: Container(
           padding: const EdgeInsets.all(10),
           decoration: BoxDecoration(
-            color: Colors.blue.withValues(alpha: 0.3),
+            color: _secondaryColor.withValues(alpha: 0.2),
             shape: BoxShape.circle,
           ),
-          child: Icon(
-            getIconData(iconName),
-            color: Colors.blue.shade200,
-            size: 24,
-          ),
+          child: Icon(getIconData(iconName), color: _secondaryColor, size: 24),
         ),
         title: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
               serviceName,
-              style: const TextStyle(
+              style: TextStyle(
                 fontWeight: FontWeight.bold,
                 color: _textColor,
                 fontSize: 16,
@@ -91,7 +106,7 @@ class HistoryViewState extends State<HistoryView> {
             const SizedBox(height: 4),
             Text(
               '$vehicleMake $vehicleModel',
-              style: const TextStyle(color: _grey300, fontSize: 14),
+              style: TextStyle(color: _grey300, fontSize: 14),
             ),
           ],
         ),
@@ -102,23 +117,20 @@ class HistoryViewState extends State<HistoryView> {
             children: [
               Row(
                 children: [
-                  const Icon(Icons.speed, size: 16, color: _grey400),
+                  Icon(Icons.speed, size: 16, color: _grey400),
                   const SizedBox(width: 4),
                   Text(
                     '$mileage ${localizations.km}',
-                    style: const TextStyle(color: _grey300),
+                    style: TextStyle(color: _grey300),
                   ),
                 ],
               ),
               const SizedBox(height: 4),
               Row(
                 children: [
-                  const Icon(Icons.calendar_today, size: 16, color: _grey400),
+                  Icon(Icons.calendar_today, size: 16, color: _grey400),
                   const SizedBox(width: 4),
-                  Text(
-                    _formatDate(date),
-                    style: const TextStyle(color: _grey300),
-                  ),
+                  Text(_formatDate(date), style: TextStyle(color: _grey300)),
                 ],
               ),
               if (notes != null && notes.isNotEmpty)
@@ -127,11 +139,11 @@ class HistoryViewState extends State<HistoryView> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      const Divider(color: _grey600, height: 1),
+                      Divider(color: _grey600, height: 1),
                       const SizedBox(height: 8),
                       Text(
                         '${localizations.notes}:',
-                        style: const TextStyle(
+                        style: TextStyle(
                           fontWeight: FontWeight.bold,
                           color: _grey300,
                           fontSize: 12,
@@ -139,7 +151,7 @@ class HistoryViewState extends State<HistoryView> {
                       ),
                       Text(
                         notes,
-                        style: const TextStyle(
+                        style: TextStyle(
                           fontStyle: FontStyle.italic,
                           color: _grey300,
                           fontSize: 12,
@@ -151,11 +163,7 @@ class HistoryViewState extends State<HistoryView> {
             ],
           ),
         ),
-        trailing: const Icon(
-          Icons.arrow_forward_ios,
-          color: _grey400,
-          size: 16,
-        ),
+        trailing: Icon(Icons.arrow_forward_ios, color: _grey400, size: 16),
         onTap: () {
           _showServiceDetails(record, localizations);
         },
@@ -170,10 +178,10 @@ class HistoryViewState extends State<HistoryView> {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        backgroundColor: Colors.grey[900],
+        backgroundColor: _dialogBackgroundColor,
         title: Text(
           localizations.serviceDetails,
-          style: const TextStyle(color: _textColor),
+          style: TextStyle(color: _textColor, fontWeight: FontWeight.bold),
         ),
         content: SingleChildScrollView(
           child: Column(
@@ -215,7 +223,10 @@ class HistoryViewState extends State<HistoryView> {
             onPressed: () => Navigator.pop(context),
             child: Text(
               localizations.close,
-              style: const TextStyle(color: _primaryColor),
+              style: TextStyle(
+                color: _primaryColor,
+                fontWeight: FontWeight.bold,
+              ),
             ),
           ),
         ],
@@ -235,13 +246,14 @@ class HistoryViewState extends State<HistoryView> {
         children: [
           Text(
             label,
-            style: const TextStyle(
+            style: TextStyle(
               fontWeight: FontWeight.bold,
               color: _grey300,
               fontSize: 12,
             ),
           ),
-          Text(value, style: const TextStyle(color: _textColor, fontSize: 14)),
+          const SizedBox(height: 2),
+          Text(value, style: TextStyle(color: _textColor, fontSize: 14)),
           const SizedBox(height: 8),
         ],
       ),
@@ -249,9 +261,9 @@ class HistoryViewState extends State<HistoryView> {
   }
 
   Widget _buildLoadingIndicator() {
-    return const Center(
+    return Center(
       child: CircularProgressIndicator(
-        valueColor: AlwaysStoppedAnimation<Color>(_textColor),
+        valueColor: AlwaysStoppedAnimation<Color>(_primaryColor),
       ),
     );
   }
@@ -265,18 +277,21 @@ class HistoryViewState extends State<HistoryView> {
           const SizedBox(height: 16),
           Text(
             localizations.errorLoadingHistory,
-            style: const TextStyle(color: _textColor, fontSize: 16),
+            style: TextStyle(color: _textColor, fontSize: 16),
           ),
           const SizedBox(height: 8),
           Text(
             error,
-            style: const TextStyle(color: _grey300),
+            style: TextStyle(color: _grey300),
             textAlign: TextAlign.center,
           ),
           const SizedBox(height: 16),
           ElevatedButton(
             onPressed: _refreshData,
-            style: ElevatedButton.styleFrom(backgroundColor: _primaryColor),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: _primaryColor,
+              foregroundColor: Colors.white,
+            ),
             child: Text(localizations.retry),
           ),
         ],
@@ -289,12 +304,12 @@ class HistoryViewState extends State<HistoryView> {
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          const Icon(Icons.history, color: _grey400, size: 64),
+          Icon(Icons.history, color: _grey400, size: 64),
           const SizedBox(height: 16),
           Text(
             localizations.noServiceRecords,
-            style: const TextStyle(
-              color: _grey300,
+            style: TextStyle(
+              color: _textColor,
               fontSize: 18,
               fontWeight: FontWeight.bold,
             ),
@@ -302,7 +317,7 @@ class HistoryViewState extends State<HistoryView> {
           const SizedBox(height: 8),
           Text(
             localizations.servicesWillAppearHere,
-            style: const TextStyle(color: _grey400),
+            style: TextStyle(color: _grey400),
             textAlign: TextAlign.center,
           ),
         ],
@@ -312,15 +327,16 @@ class HistoryViewState extends State<HistoryView> {
 
   @override
   Widget build(BuildContext context) {
+    _updateThemeColors(context);
     final localizations = AppLocalizations.of(context);
 
     return Scaffold(
-      backgroundColor: Colors.transparent,
+      backgroundColor: _backgroundColor,
       appBar: AppBar(
         backgroundColor: _backgroundColor,
         elevation: 0,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back_ios, color: _textColor),
+          icon: Icon(Icons.arrow_back_ios, color: _textColor),
           onPressed: () {
             Navigator.pushAndRemoveUntil(
               context,
@@ -331,7 +347,7 @@ class HistoryViewState extends State<HistoryView> {
         ),
         title: Text(
           localizations.serviceHistory,
-          style: const TextStyle(
+          style: TextStyle(
             color: _textColor,
             fontSize: 24,
             fontWeight: FontWeight.bold,

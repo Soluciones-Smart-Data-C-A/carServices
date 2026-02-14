@@ -34,23 +34,63 @@ void main() async {
   runApp(CarServiceApp());
 }
 
+// Clase para exponer el notificador del tema
+class ThemeNotifierProvider extends InheritedWidget {
+  final ValueNotifier<ThemeMode> themeNotifier;
+
+  const ThemeNotifierProvider({
+    super.key,
+    required this.themeNotifier,
+    required super.child,
+  });
+
+  static ThemeNotifierProvider? of(BuildContext context) {
+    return context.dependOnInheritedWidgetOfExactType<ThemeNotifierProvider>();
+  }
+
+  @override
+  bool updateShouldNotify(ThemeNotifierProvider oldWidget) {
+    return themeNotifier != oldWidget.themeNotifier;
+  }
+}
+
 class CarServiceApp extends StatefulWidget {
   const CarServiceApp({super.key});
 
   @override
-  State<CarServiceApp> createState() => _CarServiceAppState();
+  State<CarServiceApp> createState() => CarServiceAppState();
 
   static void setLocale(BuildContext context, Locale newLocale) {
-    _CarServiceAppState? state = context
-        .findAncestorStateOfType<_CarServiceAppState>();
+    CarServiceAppState? state = context
+        .findAncestorStateOfType<CarServiceAppState>();
     state?.setLocale(newLocale);
+  }
+
+  static void setTheme(BuildContext context, ThemeMode newThemeMode) {
+    CarServiceAppState? state = context
+        .findAncestorStateOfType<CarServiceAppState>();
+    state?.setTheme(newThemeMode);
+  }
+
+  static ThemeMode? getThemeMode(BuildContext context) {
+    final state = context.findAncestorStateOfType<CarServiceAppState>();
+    return state?._themeMode;
   }
 }
 
-class _CarServiceAppState extends State<CarServiceApp> {
+class CarServiceAppState extends State<CarServiceApp> {
   Locale? _locale;
-  bool _isRegistrationCompleted = false; // NUEVO: Estado de registro
-  bool _isLoading = true; // NUEVO: Estado de carga
+  ThemeMode _themeMode = ThemeMode.dark;
+  bool _isRegistrationCompleted = false;
+  bool _isLoading = true;
+
+  // ValueNotifier para notificar cambios del tema
+  final ValueNotifier<ThemeMode> _themeNotifier = ValueNotifier<ThemeMode>(
+    ThemeMode.dark,
+  );
+
+  // Getter público para el notificador
+  ValueNotifier<ThemeMode> get themeNotifier => _themeNotifier;
 
   void setLocale(Locale locale) {
     setState(() {
@@ -61,10 +101,18 @@ class _CarServiceAppState extends State<CarServiceApp> {
   @override
   void initState() {
     super.initState();
-    _initializeApp(); // MODIFICADO: Inicialización mejorada
+    _themeNotifier.value = _themeMode; // Inicializar el notificador
+    _initializeApp();
   }
 
-  // NUEVO: Método para inicializar la app
+  void setTheme(ThemeMode themeMode) {
+    setState(() {
+      _themeMode = themeMode;
+      _themeNotifier.value = themeMode; // Actualizar el notificador
+    });
+  }
+
+  // Método para inicializar la app
   void _initializeApp() async {
     // Cargar configuración en paralelo
     await Future.wait([_loadSavedLocale(), _checkRegistrationStatus()]);
@@ -92,57 +140,72 @@ class _CarServiceAppState extends State<CarServiceApp> {
 
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
-      title: 'Car Service App',
-      theme: ThemeData(
-        brightness: Brightness.dark,
-        scaffoldBackgroundColor: Color(0xFF0A0F1F),
-        canvasColor: Color(0xFF10162A),
-        colorScheme: ColorScheme.dark(primary: Color(0xFF2AEFDA)),
+    return ThemeNotifierProvider(
+      themeNotifier: _themeNotifier,
+      child: MaterialApp(
+        title: 'Car Service App',
+        theme: ThemeData(
+          brightness: Brightness.light,
+          primarySwatch: Colors.blue,
+          scaffoldBackgroundColor: Colors.grey[100],
+          appBarTheme: AppBarTheme(
+            backgroundColor: Colors.grey[100],
+            elevation: 0,
+          ),
+          colorScheme: ColorScheme.light(
+            primary: const Color(0xFF2AEFDA),
+            secondary: const Color(0xFF75A6B1),
+          ),
+        ),
+        darkTheme: ThemeData(
+          brightness: Brightness.dark,
+          scaffoldBackgroundColor: const Color(0xFF0A0F1F),
+          canvasColor: const Color(0xFF10162A),
+          colorScheme: ColorScheme.dark(
+            primary: const Color(0xFF2AEFDA),
+            secondary: const Color(0xFF75A6B1),
+          ),
+        ),
+        locale: _locale,
+        themeMode: _themeMode,
+        supportedLocales: const [Locale('en', ''), Locale('es', '')],
+        localizationsDelegates: const [
+          AppLocalizations.delegate,
+          GlobalMaterialLocalizations.delegate,
+          GlobalWidgetsLocalizations.delegate,
+          GlobalCupertinoLocalizations.delegate,
+        ],
+        // Lógica condicional para home
+        home: _isLoading
+            ? _buildLoadingScreen()
+            : _isRegistrationCompleted
+            ? const MainScreen()
+            : const SplashScreen(),
+        routes: {
+          '/main': (context) => const MainScreen(),
+          '/registration/step1': (context) => const RegistrationStep1(),
+          '/registration/step2': (context) => const RegistrationStep2(),
+          '/registration/step3': (context) =>
+              RegistrationStep3(vehicleType: 'sedan', usageType: 'personal'),
+          '/registration/step4': (context) =>
+              const RegistrationStep4(email: '', phone: '', otpCode: ''),
+        },
       ),
-      locale: _locale,
-      supportedLocales: [Locale('en', ''), Locale('es', '')],
-      localizationsDelegates: [
-        AppLocalizations.delegate,
-        GlobalMaterialLocalizations.delegate,
-        GlobalWidgetsLocalizations.delegate,
-        GlobalCupertinoLocalizations.delegate,
-      ],
-      // MODIFICADO: Lógica condicional para home
-      home: _isLoading
-          ? _buildLoadingScreen()
-          : _isRegistrationCompleted
-          ? MainScreen()
-          : SplashScreen(),
-      routes: {
-        '/main': (context) => MainScreen(),
-        '/registration/step1': (context) => RegistrationStep1(),
-        '/registration/step2': (context) => RegistrationStep2(),
-        '/registration/step3': (context) => RegistrationStep3(
-          vehicleType: 'sedan', // Estos valores vendrán del paso anterior
-          usageType: 'personal',
-        ),
-        '/registration/step4': (context) => RegistrationStep4(
-          email: '', // Estos se pasarán desde el paso 3
-          phone: '',
-          otpCode: '',
-        ),
-      },
     );
   }
 
-  // NUEVO: Pantalla de carga inicial
+  // Pantalla de carga inicial
   Widget _buildLoadingScreen() {
     return Scaffold(
       body: Container(
-        decoration: BoxDecoration(
+        decoration: const BoxDecoration(
           gradient: LinearGradient(
             begin: Alignment.topCenter,
             end: Alignment.bottomCenter,
             colors: [Color(0xFF07303D), Color(0xFF040D0F)],
           ),
         ),
-        child: Center(
+        child: const Center(
           child: CircularProgressIndicator(
             valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
           ),
@@ -166,7 +229,7 @@ class _MainScreenState extends State<MainScreen> {
   bool _locationEnabled = false;
   late LocationService _locationService;
 
-  // AJUSTE: Variables para manejar datos de servicio pendientes
+  // Variables para manejar datos de servicio pendientes
   int? _pendingServiceId;
   String? _pendingServiceName;
 
@@ -196,7 +259,7 @@ class _MainScreenState extends State<MainScreen> {
     }
   }
 
-  // AJUSTE: Función para navegar a servicios con ID y nombre
+  // Función para navegar a servicios con ID y nombre
   void _navigateToServicesWithData(String name, int id) {
     setState(() {
       _pendingServiceId = id;
@@ -219,8 +282,8 @@ class _MainScreenState extends State<MainScreen> {
         serviceId: _pendingServiceId,
         serviceName: _pendingServiceName,
       ),
-      HistoryView(),
-      SettingsView(),
+      const HistoryView(),
+      const SettingsView(),
     ];
   }
 
@@ -254,18 +317,24 @@ class _MainScreenState extends State<MainScreen> {
   }
 
   Widget _buildLoadingScreen() {
+    final isDarkMode = Theme.of(context).brightness == Brightness.dark;
+
     return Scaffold(
       body: Container(
         decoration: BoxDecoration(
           gradient: LinearGradient(
             begin: Alignment.topCenter,
             end: Alignment.bottomCenter,
-            colors: [Color(0xFF07303D), Color(0xFF040D0F)],
+            colors: isDarkMode
+                ? [const Color(0xFF07303D), const Color(0xFF040D0F)]
+                : [Colors.grey[100]!, Colors.grey[300]!],
           ),
         ),
         child: Center(
           child: CircularProgressIndicator(
-            valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+            valueColor: AlwaysStoppedAnimation<Color>(
+              isDarkMode ? Colors.white : Colors.blue,
+            ),
           ),
         ),
       ),
@@ -273,29 +342,38 @@ class _MainScreenState extends State<MainScreen> {
   }
 
   Widget _buildErrorScreen(String error) {
+    final isDarkMode = Theme.of(context).brightness == Brightness.dark;
+
     return Scaffold(
       body: Container(
         decoration: BoxDecoration(
           gradient: LinearGradient(
             begin: Alignment.topCenter,
             end: Alignment.bottomCenter,
-            colors: [Color(0xFF07303D), Color(0xFF040D0F)],
+            colors: isDarkMode
+                ? [const Color(0xFF07303D), const Color(0xFF040D0F)]
+                : [Colors.grey[100]!, Colors.grey[300]!],
           ),
         ),
         child: Center(
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              Icon(Icons.error_outline, color: Colors.red, size: 64),
-              SizedBox(height: 16),
+              const Icon(Icons.error_outline, color: Colors.red, size: 64),
+              const SizedBox(height: 16),
               Text(
                 AppLocalizations.of(context).errorLoadingData,
-                style: TextStyle(color: Colors.white, fontSize: 18),
+                style: TextStyle(
+                  color: isDarkMode ? Colors.white : Colors.black87,
+                  fontSize: 18,
+                ),
               ),
-              SizedBox(height: 8),
+              const SizedBox(height: 8),
               Text(
                 error,
-                style: TextStyle(color: Colors.white70),
+                style: TextStyle(
+                  color: isDarkMode ? Colors.white70 : Colors.black54,
+                ),
                 textAlign: TextAlign.center,
               ),
             ],
@@ -306,13 +384,17 @@ class _MainScreenState extends State<MainScreen> {
   }
 
   Widget _buildNoVehiclesScreen() {
+    final isDarkMode = Theme.of(context).brightness == Brightness.dark;
+
     return Scaffold(
       body: Container(
         decoration: BoxDecoration(
           gradient: LinearGradient(
             begin: Alignment.topCenter,
             end: Alignment.bottomCenter,
-            colors: [Color(0xFF07303D), Color(0xFF040D0F)],
+            colors: isDarkMode
+                ? [const Color(0xFF07303D), const Color(0xFF040D0F)]
+                : [Colors.grey[100]!, Colors.grey[300]!],
           ),
         ),
         child: Center(
@@ -321,18 +403,23 @@ class _MainScreenState extends State<MainScreen> {
             children: [
               Icon(
                 Icons.directions_car_outlined,
-                color: Colors.white54,
+                color: isDarkMode ? Colors.white54 : Colors.black54,
                 size: 64,
               ),
-              SizedBox(height: 16),
+              const SizedBox(height: 16),
               Text(
                 AppLocalizations.of(context).noVehicleFound,
-                style: TextStyle(color: Colors.white, fontSize: 18),
+                style: TextStyle(
+                  color: isDarkMode ? Colors.white : Colors.black87,
+                  fontSize: 18,
+                ),
               ),
-              SizedBox(height: 8),
+              const SizedBox(height: 8),
               Text(
                 AppLocalizations.of(context).addVehicleToStart,
-                style: TextStyle(color: Colors.white70),
+                style: TextStyle(
+                  color: isDarkMode ? Colors.white70 : Colors.black54,
+                ),
               ),
             ],
           ),
@@ -342,12 +429,16 @@ class _MainScreenState extends State<MainScreen> {
   }
 
   Widget _buildMainScaffold() {
+    final isDarkMode = Theme.of(context).brightness == Brightness.dark;
+
     return Container(
       decoration: BoxDecoration(
         gradient: LinearGradient(
           begin: Alignment.topCenter,
           end: Alignment.bottomCenter,
-          colors: [Color(0xFF07303D), Color(0xFF040D0F)],
+          colors: isDarkMode
+              ? [const Color(0xFF07303D), const Color(0xFF040D0F)]
+              : [Colors.grey[100]!, Colors.grey[300]!],
         ),
       ),
       child: Scaffold(
@@ -355,27 +446,27 @@ class _MainScreenState extends State<MainScreen> {
         body: _widgetOptions[_selectedIndex],
         bottomNavigationBar: BottomNavigationBar(
           type: BottomNavigationBarType.fixed,
-          backgroundColor: Color(0xFF10162A),
-          selectedItemColor: Color(0xFF2AEFDA),
-          unselectedItemColor: Colors.white54,
+          backgroundColor: isDarkMode ? const Color(0xFF10162A) : Colors.white,
+          selectedItemColor: isDarkMode ? const Color(0xFF2AEFDA) : Colors.blue,
+          unselectedItemColor: isDarkMode ? Colors.white54 : Colors.black54,
           showUnselectedLabels: true,
           currentIndex: _selectedIndex,
           onTap: _onItemTapped,
           items: [
             BottomNavigationBarItem(
-              icon: Icon(Icons.home_outlined),
+              icon: const Icon(Icons.home_outlined),
               label: AppLocalizations.of(context).home,
             ),
             BottomNavigationBarItem(
-              icon: Icon(Icons.add_outlined),
+              icon: const Icon(Icons.add_outlined),
               label: AppLocalizations.of(context).services,
             ),
             BottomNavigationBarItem(
-              icon: Icon(Icons.history_outlined),
+              icon: const Icon(Icons.history_outlined),
               label: AppLocalizations.of(context).history,
             ),
             BottomNavigationBarItem(
-              icon: Icon(Icons.settings_outlined),
+              icon: const Icon(Icons.settings_outlined),
               label: AppLocalizations.of(context).settings,
             ),
           ],

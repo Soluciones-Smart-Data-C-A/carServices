@@ -14,11 +14,6 @@ class SettingsView extends StatefulWidget {
 }
 
 class _SettingsViewState extends State<SettingsView> {
-  static const _backgroundColor = Colors.transparent;
-  static const _secondaryColor = Color(0xFF75A6B1);
-  static const _textColor = Colors.white;
-  static const _grey300 = Color(0xFFE0E0E0);
-
   final Future<List<Vehicle>> _vehiclesFuture = DatabaseService.getVehicles();
 
   void _changeLanguage(BuildContext context, String languageCode) {
@@ -30,288 +25,339 @@ class _SettingsViewState extends State<SettingsView> {
     });
   }
 
+  void _toggleTheme(bool isDark) {
+    CarServiceApp.setTheme(context, isDark ? ThemeMode.dark : ThemeMode.light);
+  }
+
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: Colors.transparent,
-      appBar: AppBar(
-        backgroundColor: _backgroundColor,
-        elevation: 0,
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back_ios, color: _textColor),
-          onPressed: () {
-            Navigator.pop(context);
-          },
-        ),
-        title: Text(
-          AppLocalizations.of(context).settings,
-          style: TextStyle(
-            color: _textColor,
-            fontSize: 24,
-            fontWeight: FontWeight.bold,
+    // Obtener el notificador del tema usando el ThemeNotifierProvider
+    final themeProvider = ThemeNotifierProvider.of(context);
+
+    if (themeProvider == null) {
+      return Scaffold(
+        backgroundColor: Colors.transparent,
+        body: const Center(
+          child: CircularProgressIndicator(
+            valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
           ),
         ),
-        centerTitle: true,
-      ),
-      body: FutureBuilder<List<Vehicle>>(
-        future: _vehiclesFuture, // Usamos la future almacenada, no recreada
-        key: const Key('vehicles_future'), // Clave única
-        builder: (context, snapshot) {
-          if (snapshot.connectionState == ConnectionState.waiting) {
-            return const Center(
-              child: CircularProgressIndicator(
-                valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+      );
+    }
+
+    return ValueListenableBuilder<ThemeMode>(
+      valueListenable: themeProvider.themeNotifier,
+      builder: (context, themeMode, child) {
+        // Determinar si es modo oscuro basado en themeMode
+        final isDarkMode = themeMode == ThemeMode.dark;
+
+        // Definir colores basados en el tema actual
+        final backgroundColor = Colors
+            .transparent; // Cambiado a transparente para heredar el gradiente del padre
+
+        final secondaryColor = const Color(0xFF75A6B1);
+        final textColor = isDarkMode ? Colors.white : Colors.black87;
+        final grey300 = isDarkMode ? const Color(0xFFE0E0E0) : Colors.black54;
+        final cardColor = isDarkMode
+            ? Colors.black.withValues(alpha: 0.3)
+            : Colors.white;
+        final switchActiveColor = isDarkMode ? secondaryColor : Colors.blue;
+        final dividerColor = isDarkMode ? secondaryColor : Colors.grey.shade300;
+        final appBarColor = isDarkMode ? Colors.transparent : Colors.grey[100];
+
+        return Scaffold(
+          backgroundColor: backgroundColor,
+          appBar: AppBar(
+            backgroundColor: appBarColor,
+            elevation: 0,
+            leading: IconButton(
+              icon: Icon(Icons.arrow_back_ios, color: textColor),
+              onPressed: () {
+                Navigator.pop(context);
+              },
+            ),
+            title: Text(
+              AppLocalizations.of(context).settings,
+              style: TextStyle(
+                color: textColor,
+                fontSize: 24,
+                fontWeight: FontWeight.bold,
               ),
-            );
-          } else if (snapshot.hasError) {
-            return Center(
-              child: Text(
-                "Error loading vehicles: ${snapshot.error}",
-                style: const TextStyle(color: _textColor),
-              ),
-            );
-          }
+            ),
+            centerTitle: true,
+          ),
+          body: Container(
+            // Asegurar que el fondo cubra toda el área
+            color: backgroundColor,
+            child: FutureBuilder<List<Vehicle>>(
+              future: _vehiclesFuture,
+              key: const Key('vehicles_future'),
+              builder: (context, snapshot) {
+                if (snapshot.connectionState == ConnectionState.waiting) {
+                  return Center(
+                    child: CircularProgressIndicator(
+                      valueColor: AlwaysStoppedAnimation<Color>(
+                        isDarkMode ? Colors.white : Colors.blue,
+                      ),
+                    ),
+                  );
+                } else if (snapshot.hasError) {
+                  return Center(
+                    child: Text(
+                      "Error loading vehicles: ${snapshot.error}",
+                      style: TextStyle(color: textColor),
+                    ),
+                  );
+                }
 
-          final vehicles = snapshot.data ?? [];
-          const int registrationLimit = 3; // Vehicle limit
+                final vehicles = snapshot.data ?? [];
+                const int registrationLimit = 3;
 
-          return SingleChildScrollView(
-            padding: const EdgeInsets.all(16),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                // Vehicle management section
-                Text(
-                  AppLocalizations.of(context).myVehicles,
-                  style: TextStyle(
-                    fontSize: 20,
-                    fontWeight: FontWeight.bold,
-                    color: _textColor,
-                  ),
-                ),
-                const SizedBox(height: 8),
-                Text(
-                  "${AppLocalizations.of(context).registeredVehicles} (${vehicles.length}/$registrationLimit):",
-                  style: const TextStyle(fontSize: 16, color: _grey300),
-                ),
-
-                const SizedBox(height: 16),
-
-                vehicles.isEmpty
-                    ? Center(
-                        child: Padding(
-                          padding: const EdgeInsets.all(20),
-                          child: Text(
-                            AppLocalizations.of(context).noVehiclesRegistered,
-                            style: const TextStyle(color: _grey300),
-                          ),
+                return SingleChildScrollView(
+                  padding: const EdgeInsets.all(16),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        AppLocalizations.of(context).myVehicles,
+                        style: TextStyle(
+                          fontSize: 20,
+                          fontWeight: FontWeight.bold,
+                          color: textColor,
                         ),
-                      )
-                    : ListView.builder(
-                        shrinkWrap: true,
-                        physics: const NeverScrollableScrollPhysics(),
-                        itemCount: vehicles.length,
-                        itemBuilder: (context, index) {
-                          final vehicle = vehicles[index];
-                          return Card(
-                            margin: const EdgeInsets.only(bottom: 12),
-                            color: Colors.black.withValues(alpha: 0.3),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(12),
-                              side: const BorderSide(
-                                color: _secondaryColor,
-                                width: 1,
+                      ),
+                      const SizedBox(height: 8),
+                      Text(
+                        "${AppLocalizations.of(context).registeredVehicles} (${vehicles.length}/$registrationLimit):",
+                        style: TextStyle(fontSize: 16, color: grey300),
+                      ),
+
+                      const SizedBox(height: 16),
+
+                      vehicles.isEmpty
+                          ? Center(
+                              child: Padding(
+                                padding: const EdgeInsets.all(20),
+                                child: Text(
+                                  AppLocalizations.of(
+                                    context,
+                                  ).noVehiclesRegistered,
+                                  style: TextStyle(color: grey300),
+                                ),
                               ),
-                            ),
-                            child: ListTile(
-                              leading: const Icon(
-                                Icons.directions_car,
-                                color: _textColor,
-                              ),
-                              title: Text(
-                                "${vehicle.make} ${vehicle.model}",
-                                style: const TextStyle(color: _textColor),
-                              ),
-                              subtitle: Text(
-                                "${AppLocalizations.of(context).mileage}: ${vehicle.currentMileage} ${AppLocalizations.of(context).km}",
-                                style: const TextStyle(color: _grey300),
-                              ),
-                              trailing: const Icon(
-                                Icons.arrow_forward_ios,
-                                color: _textColor,
-                                size: 16,
-                              ),
-                              onTap: () {
-                                ScaffoldMessenger.of(context).showSnackBar(
-                                  SnackBar(
-                                    content: Text(
-                                      "View details of ${vehicle.make} ${vehicle.model}",
+                            )
+                          : ListView.builder(
+                              shrinkWrap: true,
+                              physics: const NeverScrollableScrollPhysics(),
+                              itemCount: vehicles.length,
+                              itemBuilder: (context, index) {
+                                final vehicle = vehicles[index];
+                                return Card(
+                                  margin: const EdgeInsets.only(bottom: 12),
+                                  color: cardColor,
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(12),
+                                    side: BorderSide(
+                                      color: secondaryColor,
+                                      width: 1,
                                     ),
+                                  ),
+                                  child: ListTile(
+                                    leading: Icon(
+                                      Icons.directions_car,
+                                      color: textColor,
+                                    ),
+                                    title: Text(
+                                      "${vehicle.make} ${vehicle.model}",
+                                      style: TextStyle(color: textColor),
+                                    ),
+                                    subtitle: Text(
+                                      "${AppLocalizations.of(context).mileage}: ${vehicle.currentMileage} ${AppLocalizations.of(context).km}",
+                                      style: TextStyle(color: grey300),
+                                    ),
+                                    trailing: Icon(
+                                      Icons.arrow_forward_ios,
+                                      color: textColor,
+                                      size: 16,
+                                    ),
+                                    onTap: () {},
                                   ),
                                 );
                               },
                             ),
-                          );
-                        },
+
+                      const SizedBox(height: 24),
+                      Divider(color: dividerColor),
+                      const SizedBox(height: 24),
+
+                      Text(
+                        AppLocalizations.of(context).appSettings,
+                        style: TextStyle(
+                          fontSize: 20,
+                          fontWeight: FontWeight.bold,
+                          color: textColor,
+                        ),
+                      ),
+                      const SizedBox(height: 16),
+
+                      Card(
+                        color: cardColor,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                          side: BorderSide(color: secondaryColor, width: 1),
+                        ),
+                        child: Column(
+                          children: [
+                            ListTile(
+                              leading: Icon(
+                                isDarkMode ? Icons.dark_mode : Icons.light_mode,
+                                color: textColor,
+                              ),
+                              title: Text(
+                                isDarkMode ? "Modo Oscuro" : "Modo Claro",
+                                style: TextStyle(color: textColor),
+                              ),
+                              trailing: Switch(
+                                value: isDarkMode,
+                                activeColor: switchActiveColor,
+                                onChanged: (bool value) {
+                                  _toggleTheme(value);
+                                },
+                              ),
+                            ),
+                            Divider(color: dividerColor, height: 1),
+                            ListTile(
+                              leading: Icon(
+                                Icons.notifications,
+                                color: textColor,
+                              ),
+                              title: Text(
+                                AppLocalizations.of(context).notifications,
+                                style: TextStyle(color: textColor),
+                              ),
+                              trailing: Switch(
+                                value: true,
+                                activeColor: switchActiveColor,
+                                onChanged: (bool value) {},
+                              ),
+                            ),
+                            Divider(color: dividerColor, height: 1),
+                            ListTile(
+                              leading: Icon(Icons.language, color: textColor),
+                              title: Text(
+                                AppLocalizations.of(context).language,
+                                style: TextStyle(color: textColor),
+                              ),
+                              trailing: DropdownButton<String>(
+                                value: Localizations.localeOf(
+                                  context,
+                                ).languageCode,
+                                icon: Icon(
+                                  Icons.arrow_drop_down,
+                                  color: textColor,
+                                ),
+                                dropdownColor: isDarkMode
+                                    ? const Color(0xFF10162A)
+                                    : Colors.white,
+                                underline: Container(),
+                                onChanged: (String? newValue) {
+                                  if (newValue != null) {
+                                    _changeLanguage(context, newValue);
+                                  }
+                                },
+                                items: <String>['en', 'es']
+                                    .map<DropdownMenuItem<String>>((
+                                      String value,
+                                    ) {
+                                      return DropdownMenuItem<String>(
+                                        value: value,
+                                        child: Text(
+                                          value == 'en'
+                                              ? AppLocalizations.of(
+                                                  context,
+                                                ).english
+                                              : AppLocalizations.of(
+                                                  context,
+                                                ).spanish,
+                                          style: TextStyle(color: textColor),
+                                        ),
+                                      );
+                                    })
+                                    .toList(),
+                              ),
+                            ),
+                            Divider(color: dividerColor, height: 1),
+                            ListTile(
+                              leading: Icon(Icons.lock, color: textColor),
+                              title: Text(
+                                AppLocalizations.of(context).changePassword,
+                                style: TextStyle(color: textColor),
+                              ),
+                              trailing: Icon(
+                                Icons.arrow_forward_ios,
+                                color: textColor,
+                                size: 16,
+                              ),
+                              onTap: () {},
+                            ),
+                          ],
+                        ),
                       ),
 
-                const SizedBox(height: 24),
-                const Divider(color: _secondaryColor),
-                const SizedBox(height: 24),
+                      const SizedBox(height: 24),
+                      Divider(color: dividerColor),
+                      const SizedBox(height: 24),
 
-                // Application settings options
-                Text(
-                  AppLocalizations.of(context).appSettings,
-                  style: TextStyle(
-                    fontSize: 20,
-                    fontWeight: FontWeight.bold,
-                    color: _textColor,
-                  ),
-                ),
-                const SizedBox(height: 16),
+                      Text(
+                        AppLocalizations.of(context).appInformation,
+                        style: TextStyle(
+                          fontSize: 20,
+                          fontWeight: FontWeight.bold,
+                          color: textColor,
+                        ),
+                      ),
+                      const SizedBox(height: 16),
 
-                Card(
-                  color: Colors.black.withValues(alpha: 0.3),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
-                    side: const BorderSide(color: _secondaryColor, width: 1),
-                  ),
-                  child: Column(
-                    children: [
-                      ListTile(
-                        leading: const Icon(
-                          Icons.notifications,
-                          color: _textColor,
+                      Card(
+                        color: cardColor,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                          side: BorderSide(color: secondaryColor, width: 1),
                         ),
-                        title: Text(
-                          AppLocalizations.of(context).notifications,
-                          style: const TextStyle(color: _textColor),
+                        child: Column(
+                          children: [
+                            ListTile(
+                              title: Text(
+                                AppLocalizations.of(context).version,
+                                style: TextStyle(color: textColor),
+                              ),
+                              subtitle: Text(
+                                "1.0.0",
+                                style: TextStyle(color: grey300),
+                              ),
+                            ),
+                            Divider(color: dividerColor, height: 1),
+                            ListTile(
+                              title: Text(
+                                AppLocalizations.of(context).developer,
+                                style: TextStyle(color: textColor),
+                              ),
+                              subtitle: Text(
+                                "Car Service Team",
+                                style: TextStyle(color: grey300),
+                              ),
+                            ),
+                          ],
                         ),
-                        trailing: Switch(
-                          value: true,
-                          activeThumbColor: _secondaryColor,
-                          onChanged: (bool value) {},
-                        ),
-                      ),
-                      const Divider(color: _secondaryColor, height: 1),
-                      ListTile(
-                        leading: const Icon(Icons.language, color: _textColor),
-                        title: Text(
-                          AppLocalizations.of(context).language,
-                          style: const TextStyle(color: _textColor),
-                        ),
-                        trailing: DropdownButton<String>(
-                          value: Localizations.localeOf(context).languageCode,
-                          icon: const Icon(
-                            Icons.arrow_drop_down,
-                            color: _textColor,
-                          ),
-                          dropdownColor: const Color(0xFF10162A),
-                          underline: Container(),
-                          onChanged: (String? newValue) {
-                            if (newValue != null) {
-                              _changeLanguage(context, newValue);
-                            }
-                          },
-                          items: <String>['en', 'es']
-                              .map<DropdownMenuItem<String>>((String value) {
-                                return DropdownMenuItem<String>(
-                                  value: value,
-                                  child: Text(
-                                    value == 'en'
-                                        ? AppLocalizations.of(context).english
-                                        : AppLocalizations.of(context).spanish,
-                                    style: const TextStyle(color: _textColor),
-                                  ),
-                                );
-                              })
-                              .toList(),
-                        ),
-                      ),
-                      const Divider(color: _secondaryColor, height: 1),
-                      ListTile(
-                        leading: const Icon(Icons.lock, color: _textColor),
-                        title: Text(
-                          AppLocalizations.of(context).changePassword,
-                          style: const TextStyle(color: _textColor),
-                        ),
-                        trailing: const Icon(
-                          Icons.arrow_forward_ios,
-                          color: _textColor,
-                          size: 16,
-                        ),
-                        onTap: () {},
-                      ),
-                      const Divider(color: _secondaryColor, height: 1),
-                      ListTile(
-                        leading: Icon(Icons.logout, color: Colors.red[300]),
-                        title: Text(
-                          AppLocalizations.of(context).signOut,
-                          style: TextStyle(color: Colors.red[300]),
-                        ),
-                        trailing: Icon(
-                          Icons.arrow_forward_ios,
-                          color: Colors.red[300],
-                          size: 16,
-                        ),
-                        onTap: () {},
                       ),
                     ],
                   ),
-                ),
-
-                const SizedBox(height: 24),
-                const Divider(color: _secondaryColor),
-                const SizedBox(height: 24),
-
-                // App information
-                Text(
-                  AppLocalizations.of(context).appInformation,
-                  style: TextStyle(
-                    fontSize: 20,
-                    fontWeight: FontWeight.bold,
-                    color: _textColor,
-                  ),
-                ),
-                const SizedBox(height: 16),
-
-                Card(
-                  color: Colors.black.withValues(alpha: 0.3),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
-                    side: const BorderSide(color: _secondaryColor, width: 1),
-                  ),
-                  child: Column(
-                    children: [
-                      ListTile(
-                        title: Text(
-                          AppLocalizations.of(context).version,
-                          style: const TextStyle(color: _textColor),
-                        ),
-                        subtitle: const Text(
-                          "1.0.0",
-                          style: TextStyle(color: _grey300),
-                        ),
-                      ),
-                      const Divider(color: _secondaryColor, height: 1),
-                      ListTile(
-                        title: Text(
-                          AppLocalizations.of(context).developer,
-                          style: const TextStyle(color: _textColor),
-                        ),
-                        subtitle: const Text(
-                          "Car Service Team",
-                          style: TextStyle(color: _grey300),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ],
+                );
+              },
             ),
-          );
-        },
-      ),
+          ),
+        );
+      },
     );
   }
 }

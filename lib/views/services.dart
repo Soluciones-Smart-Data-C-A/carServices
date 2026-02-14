@@ -39,13 +39,16 @@ class ServicesViewState extends State<ServicesView> {
   late Future<List<Vehicle>> _vehiclesFuture;
   late Future<Map<String, dynamic>> _servicesDataFuture;
 
-  // Constants
-  static const _primaryColor = Color(0xFF2AEFDA);
-  static const _secondaryColor = Color(0xFF75A6B1);
-  static const _backgroundColor = Colors.transparent;
-  static const _textColor = Colors.white;
-  static const _grey300 = Color(0xFFE0E0E0);
-  static const _grey400 = Color(0xFFBDBDBD);
+  // Constantes de color que se adaptarán al tema
+  late Color _primaryColor;
+  late Color _secondaryColor;
+  late Color _backgroundColor;
+  late Color _textColor;
+  late Color _grey300;
+  late Color _grey400;
+  late Color _cardColor;
+  late Color _borderColor;
+  late Color _inputBackgroundColor;
 
   @override
   void initState() {
@@ -102,6 +105,25 @@ class ServicesViewState extends State<ServicesView> {
       _logger.i('Error loading services data: $e');
       return {'services': [], 'icons': {}, 'selection': {}};
     }
+  }
+
+  // Método para actualizar colores según el tema
+  void _updateThemeColors(BuildContext context) {
+    final isDarkMode = Theme.of(context).brightness == Brightness.dark;
+
+    _primaryColor = const Color(0xFF2AEFDA);
+    _secondaryColor = const Color(0xFF75A6B1);
+    _backgroundColor = Colors.transparent;
+    _textColor = isDarkMode ? Colors.white : Colors.black87;
+    _grey300 = isDarkMode ? const Color(0xFFE0E0E0) : Colors.black54;
+    _grey400 = isDarkMode ? const Color(0xFFBDBDBD) : Colors.black45;
+    _cardColor = isDarkMode
+        ? Colors.black.withValues(alpha: 0.3)
+        : Colors.white;
+    _borderColor = isDarkMode ? Colors.white10 : Colors.grey.shade300;
+    _inputBackgroundColor = isDarkMode
+        ? Colors.black.withValues(alpha: 0.3)
+        : Colors.grey.shade50;
   }
 
   void _showSnackBar(String message, {bool isError = false}) {
@@ -274,11 +296,11 @@ class ServicesViewState extends State<ServicesView> {
       child: Container(
         margin: const EdgeInsets.all(4),
         decoration: BoxDecoration(
-          color: Colors.black.withOpacity(0.5),
+          color: _cardColor,
           borderRadius: BorderRadius.circular(12),
           border: Border.all(
-            color: isSelected ? _primaryColor : _secondaryColor,
-            width: isSelected ? 3 : 2,
+            color: isSelected ? _primaryColor : _borderColor,
+            width: isSelected ? 3 : 1,
           ),
         ),
         child: Column(
@@ -297,7 +319,7 @@ class ServicesViewState extends State<ServicesView> {
               child: Text(
                 service.serviceName,
                 textAlign: TextAlign.center,
-                style: const TextStyle(
+                style: TextStyle(
                   color: _textColor,
                   fontSize: 12,
                   fontWeight: FontWeight.bold,
@@ -325,12 +347,14 @@ class ServicesViewState extends State<ServicesView> {
     }
 
     return Card(
-      color: isSelected
-          ? Colors.black.withOpacity(0.5)
-          : Colors.black.withOpacity(0.3),
+      color: isSelected ? _primaryColor.withValues(alpha: 0.2) : _cardColor,
+      elevation: 0,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(12),
-        side: BorderSide(color: _secondaryColor, width: 1),
+        side: BorderSide(
+          color: isSelected ? _primaryColor : _borderColor,
+          width: 1,
+        ),
       ),
       margin: const EdgeInsets.symmetric(horizontal: 0),
       child: Padding(
@@ -343,11 +367,7 @@ class ServicesViewState extends State<ServicesView> {
               height: 70,
               fit: BoxFit.contain,
               errorBuilder: (context, error, stackTrace) {
-                return const Icon(
-                  Icons.directions_car,
-                  size: 70,
-                  color: Colors.white70,
-                );
+                return Icon(Icons.directions_car, size: 70, color: _grey300);
               },
             ),
             const SizedBox(width: 12),
@@ -358,7 +378,7 @@ class ServicesViewState extends State<ServicesView> {
                 children: [
                   Text(
                     "${vehicle.make} ${vehicle.model}",
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 16,
                       fontWeight: FontWeight.bold,
                       color: _textColor,
@@ -367,7 +387,7 @@ class ServicesViewState extends State<ServicesView> {
                   const SizedBox(height: 4),
                   Text(
                     "${vehicle.currentMileage} km",
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 14,
                       color: _primaryColor,
                       fontWeight: FontWeight.w500,
@@ -415,10 +435,10 @@ class ServicesViewState extends State<ServicesView> {
           children: [
             Text(
               localizations.currentMileage,
-              style: const TextStyle(
+              style: TextStyle(
                 fontSize: 20,
                 fontWeight: FontWeight.bold,
-                color: Colors.white,
+                color: _textColor,
               ),
             ),
             const Spacer(),
@@ -445,29 +465,34 @@ class ServicesViewState extends State<ServicesView> {
         TextField(
           controller: _mileageController,
           keyboardType: TextInputType.number,
-          style: const TextStyle(color: _textColor, fontSize: 16),
+          style: TextStyle(color: _textColor, fontSize: 16),
           decoration: InputDecoration(
             hintText: localizations.enterCurrentMileage,
-            hintStyle: const TextStyle(color: _grey400, fontSize: 14),
-            border: const OutlineInputBorder(
-              borderSide: BorderSide(color: _secondaryColor),
+            hintStyle: TextStyle(color: _grey400, fontSize: 14),
+            filled: true,
+            fillColor: _inputBackgroundColor,
+            border: OutlineInputBorder(
+              borderSide: BorderSide(color: _borderColor),
+              borderRadius: BorderRadius.circular(8),
             ),
-            enabledBorder: const OutlineInputBorder(
-              borderSide: BorderSide(color: _secondaryColor),
+            enabledBorder: OutlineInputBorder(
+              borderSide: BorderSide(color: _borderColor),
+              borderRadius: BorderRadius.circular(8),
             ),
-            focusedBorder: const OutlineInputBorder(
-              borderSide: BorderSide(color: _primaryColor),
+            focusedBorder: OutlineInputBorder(
+              borderSide: BorderSide(color: _primaryColor, width: 2),
+              borderRadius: BorderRadius.circular(8),
             ),
             contentPadding: const EdgeInsets.symmetric(
               horizontal: 16,
               vertical: 14,
             ),
             suffixText: localizations.km,
-            suffixStyle: const TextStyle(
+            suffixStyle: TextStyle(
               color: _primaryColor,
               fontWeight: FontWeight.bold,
             ),
-            prefixIcon: const Icon(Icons.speed, color: _secondaryColor),
+            prefixIcon: Icon(Icons.speed, color: _secondaryColor),
           ),
         ),
         if (_isLocationEnabled && _autoMileage > 0) ...[
@@ -475,24 +500,20 @@ class ServicesViewState extends State<ServicesView> {
           Container(
             padding: const EdgeInsets.all(12),
             decoration: BoxDecoration(
-              color: _primaryColor.withOpacity(0.1),
+              color: _primaryColor.withValues(alpha: 0.1),
               borderRadius: BorderRadius.circular(8),
-              border: Border.all(color: _primaryColor.withOpacity(0.3)),
+              border: Border.all(color: _primaryColor.withValues(alpha: 0.3)),
             ),
             child: Row(
               children: [
-                const Icon(
-                  Icons.directions_car,
-                  color: _primaryColor,
-                  size: 16,
-                ),
+                Icon(Icons.directions_car, color: _primaryColor, size: 16),
                 const SizedBox(width: 8),
                 Expanded(
                   child: Text(
                     localizations.todaysAutoMileage(
                       _autoMileage.toStringAsFixed(1),
                     ),
-                    style: const TextStyle(
+                    style: TextStyle(
                       color: _primaryColor,
                       fontSize: 12,
                       fontWeight: FontWeight.w500,
@@ -504,7 +525,7 @@ class ServicesViewState extends State<ServicesView> {
                     localizations.totalMileage(
                       _selectedVehicle!.currentMileage + _autoMileage.round(),
                     ),
-                    style: const TextStyle(
+                    style: TextStyle(
                       color: _textColor,
                       fontSize: 12,
                       fontWeight: FontWeight.bold,
@@ -524,10 +545,10 @@ class ServicesViewState extends State<ServicesView> {
       children: [
         Text(
           localizations.includesServices,
-          style: const TextStyle(
+          style: TextStyle(
             fontSize: 18,
             fontWeight: FontWeight.bold,
-            color: Colors.white,
+            color: _textColor,
           ),
         ),
         Switch(
@@ -542,8 +563,8 @@ class ServicesViewState extends State<ServicesView> {
               }
             });
           },
-          activeThumbColor: _primaryColor,
-          inactiveTrackColor: Colors.grey[600],
+          activeColor: _primaryColor,
+          inactiveTrackColor: _grey400,
         ),
       ],
     );
@@ -559,10 +580,10 @@ class ServicesViewState extends State<ServicesView> {
       children: [
         Text(
           localizations.servicesPerformed,
-          style: const TextStyle(
+          style: TextStyle(
             fontSize: 20,
             fontWeight: FontWeight.bold,
-            color: Colors.white,
+            color: _textColor,
           ),
         ),
         const SizedBox(height: 12),
@@ -589,28 +610,33 @@ class ServicesViewState extends State<ServicesView> {
       children: [
         Text(
           localizations.notesOptional,
-          style: const TextStyle(
+          style: TextStyle(
             fontSize: 16,
             fontWeight: FontWeight.bold,
-            color: Colors.white,
+            color: _textColor,
           ),
         ),
         const SizedBox(height: 8),
         TextField(
           controller: _notesController,
           maxLines: 3,
-          style: const TextStyle(color: _textColor, fontSize: 14),
+          style: TextStyle(color: _textColor, fontSize: 14),
           decoration: InputDecoration(
             hintText: localizations.addAdditionalNotes,
-            hintStyle: const TextStyle(color: _grey400),
-            border: const OutlineInputBorder(
-              borderSide: BorderSide(color: _secondaryColor),
+            hintStyle: TextStyle(color: _grey400),
+            filled: true,
+            fillColor: _inputBackgroundColor,
+            border: OutlineInputBorder(
+              borderSide: BorderSide(color: _borderColor),
+              borderRadius: BorderRadius.circular(8),
             ),
-            enabledBorder: const OutlineInputBorder(
-              borderSide: BorderSide(color: _secondaryColor),
+            enabledBorder: OutlineInputBorder(
+              borderSide: BorderSide(color: _borderColor),
+              borderRadius: BorderRadius.circular(8),
             ),
-            focusedBorder: const OutlineInputBorder(
-              borderSide: BorderSide(color: _primaryColor),
+            focusedBorder: OutlineInputBorder(
+              borderSide: BorderSide(color: _primaryColor, width: 2),
+              borderRadius: BorderRadius.circular(8),
             ),
             contentPadding: const EdgeInsets.all(16),
           ),
@@ -629,6 +655,7 @@ class ServicesViewState extends State<ServicesView> {
         onPressed: canSave ? () => _saveRecord(localizations) : null,
         style: ElevatedButton.styleFrom(
           backgroundColor: canSave ? _primaryColor : _grey400,
+          foregroundColor: Colors.white,
           padding: const EdgeInsets.symmetric(vertical: 16),
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(12),
@@ -641,11 +668,7 @@ class ServicesViewState extends State<ServicesView> {
             const SizedBox(width: 8),
             Text(
               localizations.saveRecord,
-              style: const TextStyle(
-                fontSize: 16,
-                fontWeight: FontWeight.bold,
-                color: Colors.white,
-              ),
+              style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
             ),
           ],
         ),
@@ -658,11 +681,11 @@ class ServicesViewState extends State<ServicesView> {
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          const CircularProgressIndicator(color: _textColor),
+          CircularProgressIndicator(color: _primaryColor),
           const SizedBox(height: 16),
           Text(
             localizations.loadingServices,
-            style: const TextStyle(color: _textColor),
+            style: TextStyle(color: _textColor),
           ),
         ],
       ),
@@ -678,12 +701,12 @@ class ServicesViewState extends State<ServicesView> {
           const SizedBox(height: 16),
           Text(
             localizations.errorLoadingData,
-            style: const TextStyle(color: _textColor, fontSize: 18),
+            style: TextStyle(color: _textColor, fontSize: 18),
           ),
           const SizedBox(height: 8),
           Text(
             error,
-            style: const TextStyle(color: _grey300),
+            style: TextStyle(color: _grey300),
             textAlign: TextAlign.center,
           ),
         ],
@@ -696,16 +719,16 @@ class ServicesViewState extends State<ServicesView> {
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          const Icon(Icons.directions_car_outlined, color: _grey400, size: 64),
+          Icon(Icons.directions_car_outlined, color: _grey400, size: 64),
           const SizedBox(height: 16),
           Text(
             localizations.noVehicleFound,
-            style: const TextStyle(color: _textColor, fontSize: 18),
+            style: TextStyle(color: _textColor, fontSize: 18),
           ),
           const SizedBox(height: 8),
           Text(
             localizations.addVehicleFirst,
-            style: const TextStyle(color: _grey300),
+            style: TextStyle(color: _grey300),
             textAlign: TextAlign.center,
           ),
         ],
@@ -759,6 +782,7 @@ class ServicesViewState extends State<ServicesView> {
 
   @override
   Widget build(BuildContext context) {
+    _updateThemeColors(context);
     final localizations = AppLocalizations.of(context);
 
     return Scaffold(
@@ -767,7 +791,7 @@ class ServicesViewState extends State<ServicesView> {
         backgroundColor: _backgroundColor,
         elevation: 0,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back_ios, color: _textColor),
+          icon: Icon(Icons.arrow_back_ios, color: _textColor),
           onPressed: () {
             Navigator.pushAndRemoveUntil(
               context,
@@ -778,7 +802,7 @@ class ServicesViewState extends State<ServicesView> {
         ),
         title: Text(
           localizations.services,
-          style: const TextStyle(
+          style: TextStyle(
             color: _textColor,
             fontSize: 24,
             fontWeight: FontWeight.bold,

@@ -44,12 +44,15 @@ class _DashboardViewState extends State<DashboardView> {
   late Future<Vehicle?> _currentVehicleFuture;
   late Future<List<Map<String, dynamic>>> _recentServicesFuture;
 
-  // Constantes
-  static const _primaryColor = Color(0xFF2AEFDA);
-  static const _secondaryColor = Color(0xFF75A6B1);
-  static const _backgroundColor = Colors.transparent;
-  static const _textColor = Colors.white;
-  static const _grey300 = Color(0xFFE0E0E0);
+  // Constantes de color que se adaptarán al tema
+  // CAMBIO: Eliminado 'final' para permitir reasignación
+  late Color _primaryColor;
+  late Color _secondaryColor;
+  late Color _backgroundColor;
+  late Color _textColor;
+  late Color _grey300;
+  late Color _cardColor;
+  late Color _cardBorderColor;
 
   // --- ESCALA TIPOGRÁFICA OPTIMIZADA (UX) ---
   static const double _fsDisplay = 24.0; // Headlines grandes
@@ -91,8 +94,25 @@ class _DashboardViewState extends State<DashboardView> {
     }
   }
 
+  // Método para actualizar colores según el tema
+  void _updateThemeColors(BuildContext context) {
+    final isDarkMode = Theme.of(context).brightness == Brightness.dark;
+
+    _primaryColor = const Color(0xFF2AEFDA);
+    _secondaryColor = const Color(0xFF75A6B1);
+    _backgroundColor = Colors.transparent;
+    _textColor = isDarkMode ? Colors.white : Colors.black87;
+    _grey300 = isDarkMode ? const Color(0xFFE0E0E0) : Colors.black54;
+    _cardColor = isDarkMode
+        ? Colors.black.withValues(alpha: 0.3)
+        : Colors.white;
+    _cardBorderColor = isDarkMode ? Colors.white10 : Colors.grey.shade300;
+  }
+
   @override
   Widget build(BuildContext context) {
+    _updateThemeColors(context);
+
     return Scaffold(
       backgroundColor: _backgroundColor,
       body: FutureBuilder<Vehicle?>(
@@ -147,8 +167,8 @@ class _DashboardViewState extends State<DashboardView> {
       children: [
         CircleAvatar(
           radius: 24,
-          backgroundColor: Colors.grey[300],
-          child: Icon(Icons.person, color: Colors.grey[600]),
+          backgroundColor: _grey300.withValues(alpha: 0.3),
+          child: Icon(Icons.person, color: _textColor),
         ),
         const SizedBox(width: 12),
         Expanded(
@@ -166,14 +186,14 @@ class _DashboardViewState extends State<DashboardView> {
               const SizedBox(height: 1),
               Text(
                 "${vehicle.make} ${vehicle.model}",
-                style: TextStyle(fontSize: _fsCaption, color: Colors.grey[300]),
+                style: TextStyle(fontSize: _fsCaption, color: _grey300),
               ),
             ],
           ),
         ),
         IconButton(
           onPressed: _refreshData,
-          icon: const Icon(Icons.refresh, color: Colors.white),
+          icon: Icon(Icons.refresh, color: _textColor),
           tooltip: AppLocalizations.of(context).retry,
         ),
       ],
@@ -185,11 +205,7 @@ class _DashboardViewState extends State<DashboardView> {
       _getVehicleImagePath(vehicle),
       fit: BoxFit.contain,
       errorBuilder: (context, error, stackTrace) {
-        return const Icon(
-          Icons.directions_car,
-          size: 150,
-          color: Colors.white70,
-        );
+        return Icon(Icons.directions_car, size: 150, color: _grey300);
       },
     );
   }
@@ -241,22 +257,36 @@ class _DashboardViewState extends State<DashboardView> {
     String subtitle, {
     Color? valueColor,
   }) {
+    final isDarkMode = Theme.of(context).brightness == Brightness.dark;
+
     return Expanded(
       child: Container(
         padding: const EdgeInsets.all(8),
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(8),
-          gradient: const RadialGradient(
-            center: Alignment.center,
-            radius: 2.5,
-            colors: [
-              Color.fromARGB(255, 13, 20, 27),
-              Color.fromARGB(255, 36, 55, 77),
-              Color.fromARGB(255, 111, 136, 160),
-              Color.fromARGB(255, 255, 255, 255),
-            ],
-            stops: [0.1, 0.3, 0.7, 1.0],
-          ),
+          gradient: isDarkMode
+              ? const RadialGradient(
+                  center: Alignment.center,
+                  radius: 2.5,
+                  colors: [
+                    Color.fromARGB(255, 13, 20, 27),
+                    Color.fromARGB(255, 36, 55, 77),
+                    Color.fromARGB(255, 111, 136, 160),
+                    Color.fromARGB(255, 255, 255, 255),
+                  ],
+                  stops: [0.1, 0.3, 0.7, 1.0],
+                )
+              : RadialGradient(
+                  center: Alignment.center,
+                  radius: 2.5,
+                  colors: [
+                    Colors.grey.shade200,
+                    Colors.grey.shade300,
+                    Colors.grey.shade400,
+                    Colors.white,
+                  ],
+                  stops: const [0.1, 0.3, 0.7, 1.0],
+                ),
           border: Border.all(
             color: _secondaryColor.withValues(alpha: 0.4),
             width: 1.0,
@@ -270,7 +300,7 @@ class _DashboardViewState extends State<DashboardView> {
                 title,
                 style: TextStyle(
                   fontSize: _fsCaptionSmall,
-                  color: Colors.grey[300],
+                  color: _grey300,
                   fontWeight: FontWeight.w500,
                 ),
               ),
@@ -290,7 +320,7 @@ class _DashboardViewState extends State<DashboardView> {
               subtitle,
               style: TextStyle(
                 fontSize: _fsCaptionSmall,
-                color: Colors.grey[400],
+                color: _grey300,
                 fontWeight: FontWeight.w400,
               ),
             ),
@@ -304,9 +334,9 @@ class _DashboardViewState extends State<DashboardView> {
     return Container(
       width: double.infinity,
       decoration: BoxDecoration(
-        color: Colors.black.withValues(alpha: 0.3),
+        color: _cardColor,
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: Colors.white10),
+        border: Border.all(color: _cardBorderColor),
       ),
       child: Column(
         children: [
@@ -330,8 +360,8 @@ class _DashboardViewState extends State<DashboardView> {
                         widget.locationEnabled
                             ? '${AppLocalizations.of(context).todayDistance}: ${widget.todayDistance.toStringAsFixed(1)} ${AppLocalizations.of(context).km}'
                             : AppLocalizations.of(context).enableLocation,
-                        style: const TextStyle(
-                          color: Colors.white,
+                        style: TextStyle(
+                          color: _textColor,
                           fontSize: _fsBody,
                           fontWeight: FontWeight.w500,
                         ),
@@ -348,7 +378,9 @@ class _DashboardViewState extends State<DashboardView> {
             width: double.infinity,
             decoration: BoxDecoration(
               borderRadius: BorderRadius.circular(15),
-              color: Colors.grey[900],
+              color: Theme.of(context).brightness == Brightness.dark
+                  ? Colors.grey[900]
+                  : Colors.grey[200],
             ),
             child: ClipRRect(
               borderRadius: BorderRadius.circular(15),
@@ -360,15 +392,18 @@ class _DashboardViewState extends State<DashboardView> {
                     fit: BoxFit.cover,
                     errorBuilder: (context, error, stackTrace) {
                       return Container(
-                        color: Colors.white10,
-                        child: const Icon(
-                          Icons.map_outlined,
-                          color: Colors.white24,
-                        ),
+                        color: Theme.of(context).brightness == Brightness.dark
+                            ? Colors.white10
+                            : Colors.black12,
+                        child: Icon(Icons.map_outlined, color: _grey300),
                       );
                     },
                   ),
-                  Container(color: Colors.black.withValues(alpha: 0.2)),
+                  Container(
+                    color: Theme.of(context).brightness == Brightness.dark
+                        ? Colors.black.withValues(alpha: 0.2)
+                        : Colors.white.withValues(alpha: 0.1),
+                  ),
                   Center(
                     child: Stack(
                       alignment: Alignment.center,
@@ -392,9 +427,7 @@ class _DashboardViewState extends State<DashboardView> {
                           ),
                         Icon(
                           Icons.my_location,
-                          color: widget.locationEnabled
-                              ? Colors.red
-                              : Colors.white38,
+                          color: widget.locationEnabled ? Colors.red : _grey300,
                           size: 26,
                         ),
                       ],
@@ -424,10 +457,7 @@ class _DashboardViewState extends State<DashboardView> {
                 onPressed: widget.onNavigateToHistory,
                 child: Text(
                   AppLocalizations.of(context).viewAll,
-                  style: const TextStyle(
-                    color: _primaryColor,
-                    fontSize: _fsCaption,
-                  ),
+                  style: TextStyle(color: _primaryColor, fontSize: _fsCaption),
                 ),
               ),
           ],
@@ -456,7 +486,7 @@ class _DashboardViewState extends State<DashboardView> {
               style: TextStyle(
                 fontSize: _fsTitle,
                 fontWeight: FontWeight.bold,
-                color: isActive ? _textColor : Colors.white38,
+                color: isActive ? _textColor : _grey300,
               ),
             ),
             const SizedBox(height: 6),
@@ -516,6 +546,7 @@ class _DashboardViewState extends State<DashboardView> {
 
   Widget _buildServiceItem(Map<String, dynamic> service) {
     final int percentage = service['percentageRemaining'] ?? 0;
+    final bool isUrgent = service['isUrgent'] == true;
 
     Color getPercentageColor() {
       if (percentage >= 80) {
@@ -528,7 +559,6 @@ class _DashboardViewState extends State<DashboardView> {
     }
 
     final percentageColor = getPercentageColor();
-    final bool isUrgent = service['isUrgent'] == true;
 
     return Container(
       margin: const EdgeInsets.only(bottom: 8),
@@ -550,21 +580,20 @@ class _DashboardViewState extends State<DashboardView> {
         },
         child: Card(
           elevation: 0,
-          margin: EdgeInsets
-              .zero, // Eliminamos el margen externo para alineación total
+          margin: EdgeInsets.zero,
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(15),
             side: BorderSide(
-              color: isUrgent ? Colors.red.shade400 : Colors.white10,
+              color: isUrgent ? Colors.red.shade400 : _cardBorderColor,
               width: isUrgent ? 2 : 1,
             ),
           ),
-          color: Colors.black.withValues(alpha: 0.3),
+          color: _cardColor,
           child: Padding(
             padding: const EdgeInsets.symmetric(
               horizontal: 16.0,
               vertical: 20.0,
-            ), // Ajuste de padding interno
+            ),
             child: Row(
               children: [
                 Expanded(
@@ -576,7 +605,7 @@ class _DashboardViewState extends State<DashboardView> {
                         style: TextStyle(
                           fontSize: _fsBody,
                           fontWeight: FontWeight.bold,
-                          color: isUrgent ? Colors.red.shade400 : Colors.white,
+                          color: isUrgent ? Colors.red.shade400 : _textColor,
                         ),
                       ),
                       const SizedBox(height: 4),
@@ -584,9 +613,7 @@ class _DashboardViewState extends State<DashboardView> {
                         '${AppLocalizations.of(context).recommendedAt} ${service['kmToNextService'] ?? 'N/A'} ${AppLocalizations.of(context).km}',
                         style: TextStyle(
                           fontSize: _fsCaption,
-                          color: isUrgent
-                              ? Colors.red.shade400
-                              : Colors.white70,
+                          color: isUrgent ? Colors.red.shade400 : _grey300,
                         ),
                       ),
                       const SizedBox(height: 2),
@@ -594,9 +621,7 @@ class _DashboardViewState extends State<DashboardView> {
                         '${AppLocalizations.of(context).approxIn} ${service['timeRemaining'] ?? 'N/A'} ${service['timeUnit'] ?? ''}',
                         style: TextStyle(
                           fontSize: _fsCaption,
-                          color: isUrgent
-                              ? Colors.red.shade400
-                              : Colors.white70,
+                          color: isUrgent ? Colors.red.shade400 : _grey300,
                         ),
                       ),
                     ],
@@ -609,12 +634,12 @@ class _DashboardViewState extends State<DashboardView> {
                     Container(
                       padding: const EdgeInsets.all(8.0),
                       decoration: BoxDecoration(
-                        color: const Color(0x3374cfde),
+                        color: _secondaryColor.withValues(alpha: 0.2),
                         borderRadius: BorderRadius.circular(100),
                       ),
                       child: Icon(
                         getIconData(service['icon'] ?? 'default'),
-                        color: isUrgent ? Colors.red.shade400 : Colors.white,
+                        color: isUrgent ? Colors.red.shade400 : _textColor,
                         size: 24.0,
                       ),
                     ),
@@ -643,9 +668,9 @@ class _DashboardViewState extends State<DashboardView> {
       margin: const EdgeInsets.only(bottom: 8),
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(15),
-        side: const BorderSide(color: Colors.white10, width: 1),
+        side: BorderSide(color: _cardBorderColor, width: 1),
       ),
-      color: Colors.black.withValues(alpha: 0.3),
+      color: _cardColor,
       child: Padding(
         padding: const EdgeInsets.all(16.0),
         child: Row(
@@ -656,27 +681,21 @@ class _DashboardViewState extends State<DashboardView> {
                 children: [
                   Text(
                     service.serviceName ?? '',
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: _fsBody,
                       fontWeight: FontWeight.bold,
-                      color: Colors.white,
+                      color: _textColor,
                     ),
                   ),
                   const SizedBox(height: 4),
                   Text(
                     '${AppLocalizations.of(context).serviceAt} ${service.mileage} ${AppLocalizations.of(context).km}',
-                    style: const TextStyle(
-                      color: Colors.white70,
-                      fontSize: _fsCaption,
-                    ),
+                    style: TextStyle(color: _grey300, fontSize: _fsCaption),
                   ),
                   const SizedBox(height: 2),
                   Text(
                     DateFormatter.formatDate(service.date),
-                    style: const TextStyle(
-                      color: Colors.white70,
-                      fontSize: _fsCaption,
-                    ),
+                    style: TextStyle(color: _grey300, fontSize: _fsCaption),
                   ),
                 ],
               ),
@@ -685,12 +704,12 @@ class _DashboardViewState extends State<DashboardView> {
             Container(
               padding: const EdgeInsets.all(8.0),
               decoration: BoxDecoration(
-                color: const Color(0x3374cfde),
+                color: _secondaryColor.withValues(alpha: 0.2),
                 borderRadius: BorderRadius.circular(100),
               ),
               child: Icon(
                 getIconData(service.serviceName ?? ''),
-                color: Colors.white,
+                color: _textColor,
                 size: 24.0,
               ),
             ),
@@ -706,8 +725,8 @@ class _DashboardViewState extends State<DashboardView> {
       children: [
         Text(
           AppLocalizations.of(context).quickActions,
-          style: const TextStyle(
-            color: Colors.white,
+          style: TextStyle(
+            color: _textColor,
             fontSize: _fsTitle,
             fontWeight: FontWeight.bold,
           ),
@@ -783,8 +802,8 @@ class _DashboardViewState extends State<DashboardView> {
                     title,
                     maxLines: 2,
                     overflow: TextOverflow.ellipsis,
-                    style: const TextStyle(
-                      color: Colors.white,
+                    style: TextStyle(
+                      color: _textColor,
                       fontSize: _fsCaption,
                       fontWeight: FontWeight.w500,
                     ),
@@ -799,23 +818,23 @@ class _DashboardViewState extends State<DashboardView> {
   }
 
   Widget _buildLoadingIndicator() {
-    return const Center(child: CircularProgressIndicator(color: _textColor));
+    return Center(child: CircularProgressIndicator(color: _primaryColor));
   }
 
   Widget _buildLoadingCard() {
     return Card(
-      color: Colors.black,
+      color: _cardColor,
       child: Padding(
         padding: const EdgeInsets.all(24.0),
         child: Center(
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              const CircularProgressIndicator(color: _primaryColor),
+              CircularProgressIndicator(color: _primaryColor),
               const SizedBox(height: 16),
               Text(
                 AppLocalizations.of(context).loadingServices,
-                style: const TextStyle(color: _textColor),
+                style: TextStyle(color: _textColor),
               ),
             ],
           ),
@@ -834,10 +853,7 @@ class _DashboardViewState extends State<DashboardView> {
             const Icon(Icons.error_outline, color: Colors.red),
             const SizedBox(width: 12),
             Expanded(
-              child: Text(
-                message,
-                style: const TextStyle(color: Colors.white70),
-              ),
+              child: Text(message, style: TextStyle(color: _textColor)),
             ),
           ],
         ),
@@ -847,18 +863,18 @@ class _DashboardViewState extends State<DashboardView> {
 
   Widget _buildEmptyCard(String message) {
     return Card(
-      color: Colors.black.withValues(alpha: 0.3),
+      color: _cardColor,
       child: Padding(
         padding: const EdgeInsets.all(24.0),
         child: Center(
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              const Icon(Icons.info_outline, color: _grey300, size: 48),
+              Icon(Icons.info_outline, color: _grey300, size: 48),
               const SizedBox(height: 16),
               Text(
                 message,
-                style: const TextStyle(color: Colors.white70),
+                style: TextStyle(color: _grey300),
                 textAlign: TextAlign.center,
               ),
             ],
@@ -877,7 +893,7 @@ class _DashboardViewState extends State<DashboardView> {
           const SizedBox(height: 16),
           Text(
             '${AppLocalizations.of(context).errorLoadingData}: $error',
-            style: const TextStyle(color: _textColor),
+            style: TextStyle(color: _textColor),
             textAlign: TextAlign.center,
           ),
           const SizedBox(height: 16),
@@ -895,20 +911,16 @@ class _DashboardViewState extends State<DashboardView> {
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          const Icon(
-            Icons.directions_car_outlined,
-            size: 64,
-            color: Colors.white54,
-          ),
+          Icon(Icons.directions_car_outlined, size: 64, color: _grey300),
           const SizedBox(height: 16),
           Text(
             AppLocalizations.of(context).noVehicleFound,
-            style: const TextStyle(color: Colors.white, fontSize: _fsTitle),
+            style: TextStyle(color: _textColor, fontSize: _fsTitle),
           ),
           const SizedBox(height: 8),
           Text(
             AppLocalizations.of(context).addVehicleToStart,
-            style: const TextStyle(color: Colors.white70),
+            style: TextStyle(color: _grey300),
           ),
         ],
       ),
