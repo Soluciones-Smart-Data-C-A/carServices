@@ -1,7 +1,8 @@
 // registration_step4.dart - VERSIÓN CON SNACKBAR UTILS
 import 'package:flutter/material.dart';
 import 'package:car_service_app/main.dart';
-import 'package:car_service_app/utils/index.dart'; // NUEVO IMPORT
+import 'package:car_service_app/utils/index.dart';
+import 'package:car_service_app/services/registration_service.dart';
 
 class RegistrationStep4 extends StatefulWidget {
   final String email;
@@ -107,6 +108,7 @@ class _RegistrationStep4State extends State<RegistrationStep4> {
     if (!mounted) return;
 
     if (enteredOtp == _currentOtp) {
+      RegistrationService.setRegistrationCompleted(true);
       SnackBarUtils.showSuccess(
         // REEMPLAZADO
         context: context,

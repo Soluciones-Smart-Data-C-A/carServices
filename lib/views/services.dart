@@ -248,6 +248,7 @@ class ServicesViewState extends State<ServicesView> {
       id: _selectedVehicle!.id,
       make: _selectedVehicle!.make,
       model: _selectedVehicle!.model,
+      plate: _selectedVehicle!.plate,
       initialMileage: _selectedVehicle!.initialMileage,
       currentMileage: mileage > _selectedVehicle!.currentMileage
           ? mileage

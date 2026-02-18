@@ -10,6 +10,7 @@ import 'package:car_service_app/views/history.dart';
 // Importa los archivos de modelos y servicio de base de datos
 import 'package:car_service_app/models/vehicle.dart';
 import 'package:car_service_app/services/database_service.dart';
+import 'package:car_service_app/services/vehicle_api_service.dart'; // Añadido para sincronización
 import 'package:car_service_app/services/locale_service.dart';
 import 'package:car_service_app/services/location_service.dart';
 import 'package:car_service_app/services/app_localizations.dart';
@@ -27,11 +28,37 @@ void main() async {
 
   // Ejecuta las inicializaciones de forma asíncrona
   await Future.wait([
-    DatabaseService.initializeDb(),
+    DatabaseService.database, // Asegura que la DB esté lista
     LocationService.initialize(),
   ]);
 
-  runApp(CarServiceApp());
+  // Sincronización inicial en segundo plano (No bloquea el inicio de la app)
+  _syncVehiclesOnStartup();
+
+  runApp(const CarServiceApp());
+}
+
+/// Función para actualizar el cache local desde la API al iniciar
+Future<void> _syncVehiclesOnStartup() async {
+  try {
+    // Obtenemos los vehículos desde la API
+    final apiVehicles = await VehicleApiService.getVehicles();
+
+    // Obtenemos la instancia de la base de datos
+    final db = await DatabaseService.database;
+    final batch = db.batch();
+
+    // Limpiamos la tabla local y cargamos lo nuevo (Efecto Sincronización)
+    batch.delete('vehicles');
+    for (var vehicle in apiVehicles) {
+      batch.insert('vehicles', vehicle.toMap());
+    }
+
+    await batch.commit(noResult: true);
+    debugPrint("Vehículos sincronizados con éxito al iniciar.");
+  } catch (e) {
+    debugPrint("Error en sincronización inicial (Usando datos locales): $e");
+  }
 }
 
 // Clase para exponer el notificador del tema
@@ -84,12 +111,10 @@ class CarServiceAppState extends State<CarServiceApp> {
   bool _isRegistrationCompleted = false;
   bool _isLoading = true;
 
-  // ValueNotifier para notificar cambios del tema
   final ValueNotifier<ThemeMode> _themeNotifier = ValueNotifier<ThemeMode>(
     ThemeMode.dark,
   );
 
-  // Getter público para el notificador
   ValueNotifier<ThemeMode> get themeNotifier => _themeNotifier;
 
   void setLocale(Locale locale) {
@@ -101,22 +126,19 @@ class CarServiceAppState extends State<CarServiceApp> {
   @override
   void initState() {
     super.initState();
-    _themeNotifier.value = _themeMode; // Inicializar el notificador
+    _themeNotifier.value = _themeMode;
     _initializeApp();
   }
 
   void setTheme(ThemeMode themeMode) {
     setState(() {
       _themeMode = themeMode;
-      _themeNotifier.value = themeMode; // Actualizar el notificador
+      _themeNotifier.value = themeMode;
     });
   }
 
-  // Método para inicializar la app
   void _initializeApp() async {
-    // Cargar configuración en paralelo
     await Future.wait([_loadSavedLocale(), _checkRegistrationStatus()]);
-
     setState(() {
       _isLoading = false;
     });
@@ -152,18 +174,18 @@ class CarServiceAppState extends State<CarServiceApp> {
             backgroundColor: Colors.grey[100],
             elevation: 0,
           ),
-          colorScheme: ColorScheme.light(
-            primary: const Color(0xFF2AEFDA),
-            secondary: const Color(0xFF75A6B1),
+          colorScheme: const ColorScheme.light(
+            primary: Color(0xFF2AEFDA),
+            secondary: Color(0xFF75A6B1),
           ),
         ),
         darkTheme: ThemeData(
           brightness: Brightness.dark,
           scaffoldBackgroundColor: const Color(0xFF0A0F1F),
           canvasColor: const Color(0xFF10162A),
-          colorScheme: ColorScheme.dark(
-            primary: const Color(0xFF2AEFDA),
-            secondary: const Color(0xFF75A6B1),
+          colorScheme: const ColorScheme.dark(
+            primary: Color(0xFF2AEFDA),
+            secondary: Color(0xFF75A6B1),
           ),
         ),
         locale: _locale,
@@ -175,7 +197,6 @@ class CarServiceAppState extends State<CarServiceApp> {
           GlobalWidgetsLocalizations.delegate,
           GlobalCupertinoLocalizations.delegate,
         ],
-        // Lógica condicional para home
         home: _isLoading
             ? _buildLoadingScreen()
             : _isRegistrationCompleted
@@ -194,7 +215,6 @@ class CarServiceAppState extends State<CarServiceApp> {
     );
   }
 
-  // Pantalla de carga inicial
   Widget _buildLoadingScreen() {
     return Scaffold(
       body: Container(
@@ -229,7 +249,6 @@ class _MainScreenState extends State<MainScreen> {
   bool _locationEnabled = false;
   late LocationService _locationService;
 
-  // Variables para manejar datos de servicio pendientes
   int? _pendingServiceId;
   String? _pendingServiceName;
 
@@ -237,18 +256,15 @@ class _MainScreenState extends State<MainScreen> {
   void initState() {
     super.initState();
     _locationService = LocationService();
+    // OPTIMIZACIÓN: Cargar desde la base de datos local usando el método existente
     _vehiclesFuture = DatabaseService.getVehicles();
     _initializeLocation();
   }
 
   void _initializeLocation() async {
     _locationEnabled = await _locationService.checkLocationPermission();
-
     if (_locationEnabled) {
-      // Iniciar seguimiento de ubicación
       await _locationService.startLocationTracking();
-
-      // Escuchar actualizaciones de distancia
       _locationService.distanceStream.listen((distance) {
         if (mounted) {
           setState(() {
@@ -259,12 +275,11 @@ class _MainScreenState extends State<MainScreen> {
     }
   }
 
-  // Función para navegar a servicios con ID y nombre
   void _navigateToServicesWithData(String name, int id) {
     setState(() {
       _pendingServiceId = id;
       _pendingServiceName = name;
-      _selectedIndex = 1; // Cambiar a la pestaña de Servicios (índice 1)
+      _selectedIndex = 1;
     });
   }
 
@@ -290,7 +305,6 @@ class _MainScreenState extends State<MainScreen> {
   void _onItemTapped(int index) {
     setState(() {
       _selectedIndex = index;
-      // Limpiar datos pendientes si se navega manualmente a otra pestaña
       if (index != 1) {
         _pendingServiceId = null;
         _pendingServiceName = null;
@@ -318,7 +332,6 @@ class _MainScreenState extends State<MainScreen> {
 
   Widget _buildLoadingScreen() {
     final isDarkMode = Theme.of(context).brightness == Brightness.dark;
-
     return Scaffold(
       body: Container(
         decoration: BoxDecoration(
@@ -343,7 +356,6 @@ class _MainScreenState extends State<MainScreen> {
 
   Widget _buildErrorScreen(String error) {
     final isDarkMode = Theme.of(context).brightness == Brightness.dark;
-
     return Scaffold(
       body: Container(
         decoration: BoxDecoration(
@@ -385,7 +397,6 @@ class _MainScreenState extends State<MainScreen> {
 
   Widget _buildNoVehiclesScreen() {
     final isDarkMode = Theme.of(context).brightness == Brightness.dark;
-
     return Scaffold(
       body: Container(
         decoration: BoxDecoration(
@@ -430,7 +441,6 @@ class _MainScreenState extends State<MainScreen> {
 
   Widget _buildMainScaffold() {
     final isDarkMode = Theme.of(context).brightness == Brightness.dark;
-
     return Container(
       decoration: BoxDecoration(
         gradient: LinearGradient(
