@@ -1,4 +1,5 @@
 import 'package:car_service_app/models/service_record_display.dart';
+import 'package:car_service_app/services/vehicle_api_service.dart';
 import 'package:flutter/material.dart';
 import 'package:logger/logger.dart';
 import 'package:car_service_app/models/vehicle.dart';
@@ -69,7 +70,8 @@ class _DashboardViewState extends State<DashboardView> {
   }
 
   void _loadData() {
-    _vehiclesFuture = DatabaseService.getVehicles();
+    _vehiclesFuture = VehicleApiService.getVehicles();
+
     _recentServicesFuture = DatabaseService.getRecentServiceRecordsWithDetails(
       limit: 5,
     );
@@ -87,9 +89,10 @@ class _DashboardViewState extends State<DashboardView> {
         _predictionsFuture = _predictionService.predictServices(vehicles.first);
         return vehicles.first;
       }
+      _logger.w('No se encontraron vehículos en la lista');
       return null;
     } catch (e) {
-      _logger.i('Error loading current vehicle: $e');
+      _logger.e('Error loading current vehicle: $e');
       return null;
     }
   }

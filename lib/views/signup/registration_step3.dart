@@ -75,6 +75,7 @@ class _RegistrationStep3State extends State<RegistrationStep3> {
         final vehicle = Vehicle(
           make: _getVehicleTypeName(),
           model: _getUsageTypeName(),
+          plate: 'ABC123',
           initialMileage: initialMileage,
           currentMileage: initialMileage,
           lastServiceDate: DateTime.now(),
