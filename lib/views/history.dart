@@ -2,8 +2,8 @@
 import 'package:flutter/material.dart';
 import 'package:car_service_app/main.dart';
 import 'package:car_service_app/utils/icon_helper.dart';
-import 'package:car_service_app/services/database_service.dart';
 import 'package:car_service_app/services/app_localizations.dart';
+import 'package:car_service_app/services/service_record_api_service.dart';
 
 class HistoryView extends StatefulWidget {
   const HistoryView({super.key});
@@ -30,7 +30,8 @@ class HistoryViewState extends State<HistoryView> {
   @override
   void initState() {
     super.initState();
-    _serviceRecordsFuture = DatabaseService.getServiceRecordsWithDetails();
+    _serviceRecordsFuture =
+        ServiceRecordApiService.getServiceRecordsWithDetails();
   }
 
   // Método para actualizar colores según el tema
@@ -53,7 +54,8 @@ class HistoryViewState extends State<HistoryView> {
 
   void _refreshData() {
     setState(() {
-      _serviceRecordsFuture = DatabaseService.getServiceRecordsWithDetails();
+      _serviceRecordsFuture =
+          ServiceRecordApiService.getServiceRecordsWithDetails();
     });
   }
 

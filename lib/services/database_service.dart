@@ -20,7 +20,7 @@ class DatabaseService {
   static const String _serviceRulesTable = 'service_rules';
 
   // Current database version
-  static const int _databaseVersion = 1;
+  static const int _databaseVersion = 2;
 
   // Database instance getter
   static Future<Database> get database async {
@@ -98,6 +98,7 @@ class DatabaseService {
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         make TEXT NOT NULL,
         model TEXT NOT NULL,
+        plate TEXT,
         initialMileage INTEGER DEFAULT 0,
         currentMileage INTEGER DEFAULT 0,
         lastServiceDate TEXT,
@@ -261,6 +262,7 @@ class DatabaseService {
       {
         'make': 'Chery',
         'model': 'Arauca',
+        'plate': 'ABC-123',
         'initialMileage': 5000,
         'currentMileage': 38500, // Ajustado para generar % entre 50-79%
         'lastServiceDate': DateTime.now()
@@ -272,6 +274,7 @@ class DatabaseService {
       {
         'make': 'Toyota',
         'model': 'Corolla',
+        'plate': 'XYZ-987',
         'initialMileage': 10000,
         'currentMileage': 68500, // Ajustado para generar % entre 50-79%
         'lastServiceDate': DateTime.now()
