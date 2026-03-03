@@ -21,19 +21,27 @@ class ServicesView extends StatefulWidget {
 }
 
 class ServicesViewState extends State<ServicesView> {
-  // Controllers
+  // Controladores de texto para los campos de entrada
   final TextEditingController _mileageController = TextEditingController();
   final TextEditingController _notesController = TextEditingController();
+  // Controlador para el campo de búsqueda de servicios
+  final TextEditingController _searchController = TextEditingController();
   static final Logger _logger = Logger();
 
-  // State
-  Map<int, bool> _selectedServices = {};
-  List<Service> _availableServices = [];
-  Map<int, String> _serviceIcons = {};
-  Vehicle? _selectedVehicle;
-  bool _hasServices = false;
-  bool _isLocationEnabled = false;
-  double _autoMileage = 0.0;
+  // Estado de la vista (variables que al cambiar, pueden redibujar la UI)
+  Map<int, bool> _selectedServices =
+      {}; // Maneja qué servicios están seleccionados
+  List<Service> _availableServices =
+      []; // Lista completa de servicios disponibles
+  Map<int, String> _serviceIcons =
+      {}; // Map para relacionar IDs de servicios con sus iconos
+  Vehicle? _selectedVehicle; // Vehículo actualmente seleccionado
+  bool _hasServices =
+      false; // Indica si el switch "¿Incluye servicios?" está activo
+  bool _isLocationEnabled = false; // Indica si el GPS está activado/permitido
+  double _autoMileage = 0.0; // Kilometraje automático obtenido del GPS
+  // Variable que almacena el texto actual de la búsqueda para filtrar los servicios
+  String _searchQuery = '';
 
   // Futures
   late Future<List<Vehicle>> _vehiclesFuture;
@@ -59,6 +67,16 @@ class ServicesViewState extends State<ServicesView> {
     }
     _initializeData();
     _checkLocationStatus();
+  }
+
+  // Método dispose: se llama cuando este widget se destruye (cerrar la pantalla)
+  // Siempre es necesario liberar los controladores de texto para evitar fugas de memoria
+  @override
+  void dispose() {
+    _mileageController.dispose();
+    _notesController.dispose();
+    _searchController.dispose(); // Liberamos el controlador de búsqueda
+    super.dispose();
   }
 
   void _initializeData() {
@@ -288,44 +306,64 @@ class ServicesViewState extends State<ServicesView> {
     return iconMap[iconName] ?? Icons.build;
   }
 
+  // Construye la tarjeta (botón) individual para cada servicio en la grilla
   Widget _buildServiceCard(Service service) {
+    // Obtenemos el icono del servicio; si no se encuentra, usamos un valor por defecto
     final iconName = _serviceIcons[service.id] ?? 'default_icon';
+    // Verificamos en el Map de estado si este servicio específico está seleccionado
     final isSelected = _selectedServices[service.id] ?? false;
 
+    // GestureDetector nos permite detectar toques (taps) en el contenedor para seleccionarlo
     return GestureDetector(
+      // Al tocar, invertimos el estado actual (si era false pasa a true, y viceversa)
+      // Usamos setState para que la pantalla se redibuje y muestre el cambio de color
       onTap: () => setState(() => _selectedServices[service.id!] = !isSelected),
       child: Container(
-        margin: const EdgeInsets.all(4),
+        // Reducimos el margen a 2 para que los botones queden más juntos (compactos)
+        margin: const EdgeInsets.all(2),
         decoration: BoxDecoration(
           color: _cardColor,
-          borderRadius: BorderRadius.circular(12),
+          // Bordes redondeados más sutiles para aprovechar mejor el espacio
+          borderRadius: BorderRadius.circular(10),
           border: Border.all(
+            // Si está seleccionado, usamos el color primario; si no, el color de borde estándar
             color: isSelected ? _primaryColor : _borderColor,
-            width: isSelected ? 3 : 1,
+            // Hacemos el borde más grueso (2px) si está seleccionado para resaltarlo
+            width: isSelected ? 2 : 1,
           ),
         ),
         child: Column(
+          // Centramos el contenido (icono + texto) verticalmente dentro del botón
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             Container(
-              padding: const EdgeInsets.all(12),
+              // Reducimos el padding interno del icono para que no ocupe tanto espacio
+              padding: const EdgeInsets.all(6),
               child: Icon(
                 _getIconForService(iconName),
-                size: 32,
+                // Reducimos el tamaño del icono a 24 (antes 32) para ganar espacio en pantalla
+                size: 24,
                 color: _textColor,
               ),
             ),
             Padding(
-              padding: const EdgeInsets.only(bottom: 8),
+              // Padding horizontal pequeño para que el texto no toque los bordes laterales
+              padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
               child: Text(
                 service.serviceName,
                 textAlign: TextAlign.center,
                 style: TextStyle(
                   color: _textColor,
-                  fontSize: 12,
+                  // Fuente más pequeña (11) para que quepan palabras largas en botones compactos
+                  fontSize: 11,
                   fontWeight: FontWeight.bold,
+                  // Ajustamos la altura de la línea para comprimir un poco el texto multilínea
+                  height: 1.1,
                 ),
+                // Permitimos un máximo de 2 líneas para el nombre del servicio
                 maxLines: 2,
+                // Si el texto sigue siendo muy largo, lo cortamos con puntos suspensivos (...)
+                overflow: TextOverflow.ellipsis,
               ),
             ),
           ],
@@ -571,36 +609,116 @@ class ServicesViewState extends State<ServicesView> {
     );
   }
 
+  // Construye la sección donde se muestran los botones de los servicios
   Widget _buildServicesGrid(AppLocalizations localizations) {
+    // Si el switch temporal "Incluye servicios" está apagado, no mostramos nada
     if (!_hasServices) {
-      return const SizedBox.shrink();
+      return const SizedBox.shrink(); // Widget invisible que no ocupa espacio
     }
 
+    // Filtramos la lista completa de servicios basándonos en el texto de búsqueda actual
+    final filteredServices = _availableServices.where((s) {
+      // Si el campo de búsqueda está vacío, mostramos todos los servicios (true)
+      if (_searchQuery.isEmpty) return true;
+      // Convertimos tanto el nombre del servicio como la búsqueda a minúsculas para
+      // que la búsqueda no sea sensible a mayúsculas/minúsculas (case-insensitive)
+      return s.serviceName.toLowerCase().contains(_searchQuery.toLowerCase());
+    }).toList();
+
     return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
+      crossAxisAlignment:
+          CrossAxisAlignment.start, // Alineamos los elementos a la izquierda
       children: [
         Text(
-          localizations.servicesPerformed,
+          localizations.servicesPerformed, // "Servicios realizados"
           style: TextStyle(
             fontSize: 20,
             fontWeight: FontWeight.bold,
             color: _textColor,
           ),
         ),
-        const SizedBox(height: 12),
-        GridView.builder(
-          shrinkWrap: true,
-          physics: const NeverScrollableScrollPhysics(),
-          gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-            crossAxisCount: 3,
-            crossAxisSpacing: 8.0,
-            mainAxisSpacing: 8.0,
-            childAspectRatio: 0.85,
+        const SizedBox(height: 12), // Espacio vertical
+        // Campo de entrada de texto (TextField) para la barra de búsqueda
+        TextField(
+          controller:
+              _searchController, // Asignamos el controlador creado arriba
+          // onChanged se ejecuta cada vez que el usuario teclea una letra
+          // Actualiza la variable _searchQuery y llama a setState para redibujar
+          // la grilla solo con los servicios que coinciden
+          onChanged: (value) => setState(() => _searchQuery = value),
+          style: TextStyle(color: _textColor, fontSize: 14),
+          decoration: InputDecoration(
+            hintText: 'Buscar servicio...', // Texto gris de placeholder
+            hintStyle: TextStyle(color: _grey400),
+            // Icono de lupa a la izquierda del campo de texto
+            prefixIcon: Icon(Icons.search, color: _secondaryColor, size: 20),
+            // Icono "X" a la derecha, solo se muestra si hay texto escrito
+            suffixIcon: _searchQuery.isNotEmpty
+                ? IconButton(
+                    icon: Icon(Icons.clear, color: _grey400, size: 20),
+                    // Al presionar la 'X', limpiamos el campo y borramos el filtro de búsqueda
+                    onPressed: () {
+                      _searchController.clear();
+                      setState(() => _searchQuery = '');
+                    },
+                  )
+                : null, // Si está vacío, no mostramos ningún botón a la derecha
+            filled: true,
+            fillColor: _inputBackgroundColor,
+            // Estilos para los diferentes estados del borde del campo de texto
+            border: OutlineInputBorder(
+              borderSide: BorderSide(color: _borderColor),
+              borderRadius: BorderRadius.circular(8),
+            ),
+            enabledBorder: OutlineInputBorder(
+              borderSide: BorderSide(color: _borderColor),
+              borderRadius: BorderRadius.circular(8),
+            ),
+            focusedBorder: OutlineInputBorder(
+              borderSide: BorderSide(color: _primaryColor, width: 1.5),
+              borderRadius: BorderRadius.circular(8),
+            ),
+            contentPadding: const EdgeInsets.symmetric(
+              horizontal: 16,
+              vertical: 10,
+            ),
           ),
-          itemCount: _availableServices.length,
-          itemBuilder: (context, index) =>
-              _buildServiceCard(_availableServices[index]),
         ),
+        const SizedBox(height: 16),
+
+        // Si después de filtrar no hay resultados, mostramos un mensaje amigable
+        if (filteredServices.isEmpty)
+          Center(
+            child: Padding(
+              padding: const EdgeInsets.all(16.0),
+              child: Text(
+                'No se encontraron servicios',
+                style: TextStyle(color: _grey300, fontSize: 14),
+              ),
+            ),
+          )
+        // De lo contrario, dibujamos la grilla (GridView) de botones
+        else
+          GridView.builder(
+            shrinkWrap:
+                true, // Importante cuando está dentro de un SingleChildScrollView (para que no tome infinito scroll)
+            physics:
+                const NeverScrollableScrollPhysics(), // Desactiva el scroll interno de este listado, el padre hace el scroll general
+            // Delega cómo se estructuran las columnas de la grilla
+            gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+              crossAxisCount: 3, // Mostramos 3 columnas de botones
+              crossAxisSpacing: 8.0, // Espacio horizontal entre botones
+              mainAxisSpacing: 8.0, // Espacio vertical entre filas de botones
+              // Relación de aspecto (ancho/alto) del botón.
+              // 1.1 significa que es ligeramente más ancho que alto (botones más chaparros/compactos)
+              childAspectRatio: 1.1,
+            ),
+            // Cantidad de elementos a mostrar (usamos la lista ya filtrada)
+            itemCount: filteredServices.length,
+            // Función constructora: qué widget dibujar para cada elemento indexeado
+            itemBuilder: (context, index) =>
+                _buildServiceCard(filteredServices[index]),
+          ),
       ],
     );
   }
