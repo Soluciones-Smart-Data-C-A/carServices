@@ -20,7 +20,7 @@ class DatabaseService {
   static const String _serviceRulesTable = 'service_rules';
 
   // Current database version
-  static const int _databaseVersion = 2;
+  static const int _databaseVersion = 6;
 
   // Database instance getter
   static Future<Database> get database async {
@@ -98,7 +98,7 @@ class DatabaseService {
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         make TEXT NOT NULL,
         model TEXT NOT NULL,
-        plate TEXT,
+        plate TEXT DEFAULT '',
         initialMileage INTEGER DEFAULT 0,
         currentMileage INTEGER DEFAULT 0,
         lastServiceDate TEXT,
@@ -291,6 +291,7 @@ class DatabaseService {
   }
 
   static Future<void> _populateServiceRecords(Database db) async {
+    _logger.i('Populating service records...');
     final records = [
       {
         'vehicleId': 1,

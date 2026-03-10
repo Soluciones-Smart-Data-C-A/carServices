@@ -23,7 +23,7 @@ class ServiceRecordApiService {
         "vehicleId": vehicleId,
         "serviceId": serviceId,
         "mileage": mileage,
-        // "date": date,
+        //"date": date,
       };
 
       // Si el usuario escribió notas adicionales, las agregamos al mapa.

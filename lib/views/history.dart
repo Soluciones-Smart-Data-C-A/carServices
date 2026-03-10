@@ -4,6 +4,7 @@ import 'package:car_service_app/main.dart';
 import 'package:car_service_app/utils/icon_helper.dart';
 import 'package:car_service_app/services/app_localizations.dart';
 import 'package:car_service_app/services/service_record_api_service.dart';
+import 'package:car_service_app/views/service_record_details.dart'; // Importamos la nueva vista de detalles
 
 class HistoryView extends StatefulWidget {
   const HistoryView({super.key});
@@ -20,10 +21,9 @@ class HistoryViewState extends State<HistoryView> {
   late Color _textColor;
   late Color _grey300;
   late Color _grey400;
-  late Color _grey600;
   late Color _cardColor;
   late Color _borderColor;
-  late Color _dialogBackgroundColor;
+  // Eliminamos _dialogBackgroundColor ya que no usaremos diálogos
 
   late Future<List<Map<String, dynamic>>> _serviceRecordsFuture;
 
@@ -44,12 +44,11 @@ class HistoryViewState extends State<HistoryView> {
     _textColor = isDarkMode ? Colors.white : Colors.black87;
     _grey300 = isDarkMode ? const Color(0xFFE0E0E0) : Colors.black54;
     _grey400 = isDarkMode ? const Color(0xFFBDBDBD) : Colors.black45;
-    _grey600 = isDarkMode ? const Color(0xFF757575) : Colors.black38;
     _cardColor = isDarkMode
         ? Colors.black.withValues(alpha: 0.3)
         : Colors.white;
     _borderColor = isDarkMode ? Colors.white10 : Colors.grey.shade300;
-    _dialogBackgroundColor = isDarkMode ? Colors.grey[900]! : Colors.white;
+    // Eliminamos la asignación de _dialogBackgroundColor
   }
 
   void _refreshData() {
@@ -71,9 +70,7 @@ class HistoryViewState extends State<HistoryView> {
         record['serviceName'] as String? ?? localizations.service;
     final vehicleMake = record['vehicleMake'] as String? ?? '';
     final vehicleModel = record['vehicleModel'] as String? ?? '';
-    final mileage = record['mileage'] as int? ?? 0;
     final date = DateTime.parse(record['date'] as String);
-    final notes = record['notes'] as String?;
     final iconName = record['serviceIcon'] as String? ?? 'oil_change';
 
     return Card(
@@ -119,148 +116,29 @@ class HistoryViewState extends State<HistoryView> {
             children: [
               Row(
                 children: [
-                  Icon(Icons.speed, size: 16, color: _grey400),
-                  const SizedBox(width: 4),
-                  Text(
-                    '$mileage ${localizations.km}',
-                    style: TextStyle(color: _grey300),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 4),
-              Row(
-                children: [
                   Icon(Icons.calendar_today, size: 16, color: _grey400),
                   const SizedBox(width: 4),
                   Text(_formatDate(date), style: TextStyle(color: _grey300)),
                 ],
               ),
-              if (notes != null && notes.isNotEmpty)
-                Padding(
-                  padding: const EdgeInsets.only(top: 8.0),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Divider(color: _grey600, height: 1),
-                      const SizedBox(height: 8),
-                      Text(
-                        '${localizations.notes}:',
-                        style: TextStyle(
-                          fontWeight: FontWeight.bold,
-                          color: _grey300,
-                          fontSize: 12,
-                        ),
-                      ),
-                      Text(
-                        notes,
-                        style: TextStyle(
-                          fontStyle: FontStyle.italic,
-                          color: _grey300,
-                          fontSize: 12,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
             ],
           ),
         ),
         trailing: Icon(Icons.arrow_forward_ios, color: _grey400, size: 16),
         onTap: () {
-          _showServiceDetails(record, localizations);
+          // En lugar de mostrar el diálogo, navegamos a la nueva pantalla de detalles
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (context) => ServiceRecordDetailsView(record: record),
+            ),
+          );
         },
       ),
     );
   }
 
-  void _showServiceDetails(
-    Map<String, dynamic> record,
-    AppLocalizations localizations,
-  ) {
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        backgroundColor: _dialogBackgroundColor,
-        title: Text(
-          localizations.serviceDetails,
-          style: TextStyle(color: _textColor, fontWeight: FontWeight.bold),
-        ),
-        content: SingleChildScrollView(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              _buildDetailItem(
-                localizations.service,
-                record['serviceName'] as String,
-                localizations,
-              ),
-              _buildDetailItem(
-                localizations.vehicle,
-                '${record['vehicleMake']} ${record['vehicleModel']}',
-                localizations,
-              ),
-              _buildDetailItem(
-                localizations.mileage,
-                '${record['mileage']} ${localizations.km}',
-                localizations,
-              ),
-              _buildDetailItem(
-                localizations.date,
-                _formatDate(DateTime.parse(record['date'] as String)),
-                localizations,
-              ),
-              if (record['notes'] != null &&
-                  (record['notes'] as String).isNotEmpty)
-                _buildDetailItem(
-                  localizations.notes,
-                  record['notes'] as String,
-                  localizations,
-                ),
-            ],
-          ),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: Text(
-              localizations.close,
-              style: TextStyle(
-                color: _primaryColor,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildDetailItem(
-    String label,
-    String value,
-    AppLocalizations localizations,
-  ) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 4.0),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            label,
-            style: TextStyle(
-              fontWeight: FontWeight.bold,
-              color: _grey300,
-              fontSize: 12,
-            ),
-          ),
-          const SizedBox(height: 2),
-          Text(value, style: TextStyle(color: _textColor, fontSize: 14)),
-          const SizedBox(height: 8),
-        ],
-      ),
-    );
-  }
+  // Eliminados métodos _showServiceDetails y _buildDetailItem ya que no se usan
 
   Widget _buildLoadingIndicator() {
     return Center(
