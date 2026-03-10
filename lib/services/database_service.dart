@@ -262,6 +262,7 @@ class DatabaseService {
       {
         'make': 'Chery',
         'model': 'Arauca',
+        'plate': 'ABC-123',
         'initialMileage': 5000,
         'currentMileage': 38500, // Ajustado para generar % entre 50-79%
         'lastServiceDate': DateTime.now()
@@ -273,6 +274,7 @@ class DatabaseService {
       {
         'make': 'Toyota',
         'model': 'Corolla',
+        'plate': 'XYZ-987',
         'initialMileage': 10000,
         'currentMileage': 68500, // Ajustado para generar % entre 50-79%
         'lastServiceDate': DateTime.now()

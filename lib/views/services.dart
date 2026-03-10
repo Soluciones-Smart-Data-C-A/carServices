@@ -3,11 +3,12 @@ import 'package:flutter/material.dart';
 import 'package:logger/logger.dart';
 import 'package:car_service_app/main.dart';
 import 'package:car_service_app/models/vehicle.dart';
-import 'package:car_service_app/models/service_record.dart';
+
 import 'package:car_service_app/models/service.dart';
 import 'package:car_service_app/services/database_service.dart';
 import 'package:car_service_app/services/location_service.dart';
 import 'package:car_service_app/services/app_localizations.dart';
+import 'package:car_service_app/services/service_record_api_service.dart';
 
 class ServicesView extends StatefulWidget {
   // AJUSTE: Parámetros opcionales para inicializar con datos
@@ -63,7 +64,9 @@ class ServicesViewState extends State<ServicesView> {
     super.initState();
     _logger.i('ServicesView initialized  ${widget.serviceId}');
     if (widget.serviceId != null) {
-      _hasServices = true;
+      // Nota para el novato: Anteriormente aquí se activaba '_hasServices = true' si se pasaba un ID.
+      // Como ahora los servicios son obligatorios siempre, ya no necesitamos esa variable.
+      // La lógica para pre-seleccionar el servicio se mantiene intacta en _loadServicesData.
     }
     _initializeData();
     _checkLocationStatus();
@@ -183,64 +186,86 @@ class ServicesViewState extends State<ServicesView> {
     );
   }
 
+  // Método para validar que los datos ingresados sean correctos antes de guardar
   bool _validateInputs(AppLocalizations localizations) {
-    if (_selectedVehicle == null || _mileageController.text.isEmpty) {
+    // 1. Validar que se haya seleccionado un vehículo siempre
+    if (_selectedVehicle == null) {
+      // Nota para el novato: Si no hay vehículo, no podemos guardar nada.
       _showSnackBar(localizations.selectVehicleAndMileage, isError: true);
       return false;
     }
 
-    final mileage = int.tryParse(_mileageController.text) ?? 0;
-    if (mileage == 0) {
-      _showSnackBar(localizations.enterValidMileage, isError: true);
+    // 2. Validar que al menos un servicio esté seleccionado (Ahora es Obligatorio)
+    // Nota para el novato: Obtenemos una lista de los IDs de los servicios que el usuario ha marcado con un 'check' (cuyo valor es 'true').
+    final selectedServiceIds = _selectedServices.entries
+        .where((entry) => entry.value)
+        .map((entry) => entry.key)
+        .toList();
+
+    if (selectedServiceIds.isEmpty) {
+      // Si la lista de seleccionados está vacía, mostramos error porque es obligatorio.
+      _showSnackBar(localizations.selectAtLeastOneService, isError: true);
       return false;
     }
 
-    if (mileage < _selectedVehicle!.currentMileage) {
-      _showSnackBar(
-        localizations.mileageCannotBeLess(_selectedVehicle!.currentMileage),
-        isError: true,
-      );
-      return false;
-    }
+    // 3. Validar el Kilometraje (Ahora es Opcional)
+    // Nota para el novato: Si el usuario ingresó algo en el campo de texto, tratamos de convertirlo a número entero (int).
+    // Si no ingresó nada (está vacío) o ingresó letras, int.tryParse devolverá 'null'. En ese caso, usamos 0 temporalmente para revisar.
+    if (_mileageController.text.isNotEmpty) {
+      final inputMileage = int.tryParse(_mileageController.text) ?? 0;
 
-    if (_hasServices) {
-      final selectedServiceIds = _selectedServices.entries
-          .where((entry) => entry.value)
-          .map((entry) => entry.key)
-          .toList();
-
-      if (selectedServiceIds.isEmpty) {
-        _showSnackBar(localizations.selectAtLeastOneService, isError: true);
+      // Si el kilometraje ingresado es mayor a 0, verificamos que no sea menor al que ya tiene el vehículo registrado.
+      // No puedes retroceder el kilometraje de un carro en la vida real.
+      if (inputMileage > 0 && inputMileage < _selectedVehicle!.currentMileage) {
+        _showSnackBar(
+          localizations.mileageCannotBeLess(_selectedVehicle!.currentMileage),
+          isError: true,
+        );
         return false;
       }
     }
 
+    // Si pasamos todas las validaciones anteriores, devolvemos 'true' (todo correcto).
     return true;
   }
 
+  // Método principal que se ejecuta al presionar el botón "Guardar"
   Future<void> _saveRecord(AppLocalizations localizations) async {
+    // Primero, llamamos a nuestro método de validación. Si devuelve 'false', detenemos el guardado (return;).
     if (!_validateInputs(localizations)) return;
 
-    final mileage = int.parse(_mileageController.text);
-    List<int> selectedServiceIds = [];
+    // Determinar el Kilometraje a Guardar
+    // Nota para el novato: Como el campo de kilometraje ahora es opcional:
+    // - Si el usuario escribió un número, lo usamos (`int.parse`).
+    // - Si lo dejó en blanco (`isEmpty`), tomamos automáticamente el kilometraje actual que ya tiene el vehículo.
+    final mileageToSave = _mileageController.text.isEmpty
+        ? _selectedVehicle!.currentMileage
+        : int.parse(_mileageController.text);
 
-    if (_hasServices) {
-      selectedServiceIds = _selectedServices.entries
-          .where((entry) => entry.value)
-          .map((entry) => entry.key)
-          .toList();
-    }
+    // Obtener los IDs de los servicios seleccionados
+    // Nota para el novato: Filtramos nuestro diccionario ('Map') _selectedServices para quedarnos solo con los que tienen valor 'true'.
+    final selectedServiceIds = _selectedServices.entries
+        .where((entry) => entry.value)
+        .map((entry) => entry.key)
+        .toList();
 
     try {
-      if (_hasServices && selectedServiceIds.isNotEmpty) {
-        await _saveServiceRecords(mileage, selectedServiceIds);
+      // Guardamos el registro de cada servicio en la base de datos
+      // Nota para el novato: Ya no verificamos 'if (_hasServices)' porque siempre habrán servicios seleccionados (lo validamos arriba).
+      if (selectedServiceIds.isNotEmpty) {
+        await _saveServiceRecords(mileageToSave, selectedServiceIds);
       }
 
-      await _updateVehicleData(mileage);
+      // Actualizamos el kilometraje del vehículo en la base de datos (por si el usuario lo incrementó)
+      await _updateVehicleData(mileageToSave);
 
+      // Mostramos el mensaje de éxito
       _showSnackBar(localizations.serviceRecordSaved);
+
+      // Limpiamos el formulario para un nuevo registro
       _resetForm();
     } catch (e) {
+      // Si algo sale mal (ej. error de base de datos), atrapamos el error ('catch') y lo mostramos al usuario.
       _showSnackBar(
         localizations.errorSavingRecord(e.toString()),
         isError: true,
@@ -250,14 +275,16 @@ class ServicesViewState extends State<ServicesView> {
 
   Future<void> _saveServiceRecords(int mileage, List<int> serviceIds) async {
     for (final serviceId in serviceIds) {
-      final newRecord = ServiceRecord(
+      // Usamos el servicio nuevo para enviar la información a la nube (API) de frente.
+      // Ya no construimos un 'ServiceRecord' local sino que pasamos
+      // los parámetros obligatorios a nuestra clase encargada de la API.
+      await ServiceRecordApiService.saveServiceRecord(
         vehicleId: _selectedVehicle!.id!,
         serviceId: serviceId,
         mileage: mileage,
-        date: DateTime.now(),
+        //date: DateTime.now().toIso8601String(),
         notes: _notesController.text.isEmpty ? null : _notesController.text,
       );
-      await DatabaseService.addServiceRecord(newRecord);
     }
   }
 
@@ -283,7 +310,8 @@ class ServicesViewState extends State<ServicesView> {
     _mileageController.clear();
     _notesController.clear();
     setState(() {
-      _hasServices = false;
+      // Limpiamos las selecciones de servicios poniendo todo en false
+      // Nota para el novato: _hasServices = false; fue eliminado ya que el switch no existe más.
       _selectedServices = _selectedServices.map(
         (key, value) => MapEntry(key, false),
       );
@@ -473,6 +501,7 @@ class ServicesViewState extends State<ServicesView> {
         Row(
           children: [
             Text(
+              // Título del campo. Nota para el novato: '(Opcional)' se podría añadir en el archivo de traducciones, pero de momento es instruido que es opcional.
               localizations.currentMileage,
               style: TextStyle(
                 fontSize: 20,
@@ -506,7 +535,8 @@ class ServicesViewState extends State<ServicesView> {
           keyboardType: TextInputType.number,
           style: TextStyle(color: _textColor, fontSize: 16),
           decoration: InputDecoration(
-            hintText: localizations.enterCurrentMileage,
+            // Nota para el novato: Cambiamos el texto de ayuda o hintText para indicarle al usuario que es opcional
+            hintText: "${localizations.enterCurrentMileage} (Opcional)",
             hintStyle: TextStyle(color: _grey400, fontSize: 14),
             filled: true,
             fillColor: _inputBackgroundColor,
@@ -578,43 +608,11 @@ class ServicesViewState extends State<ServicesView> {
     );
   }
 
-  Widget _buildServicesSwitch(AppLocalizations localizations) {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-      children: [
-        Text(
-          localizations.includesServices,
-          style: TextStyle(
-            fontSize: 18,
-            fontWeight: FontWeight.bold,
-            color: _textColor,
-          ),
-        ),
-        Switch(
-          value: _hasServices,
-          onChanged: (bool value) {
-            setState(() {
-              _hasServices = value;
-              if (!value) {
-                _selectedServices = _selectedServices.map(
-                  (key, value) => MapEntry(key, false),
-                );
-              }
-            });
-          },
-          activeColor: _primaryColor,
-          inactiveTrackColor: _grey400,
-        ),
-      ],
-    );
-  }
+  // Nota para el novato: _buildServicesSwitch fue eliminado por completo de aquí. Ya no necesitamos preguntarle "Incluye servicios?".
 
   // Construye la sección donde se muestran los botones de los servicios
   Widget _buildServicesGrid(AppLocalizations localizations) {
-    // Si el switch temporal "Incluye servicios" está apagado, no mostramos nada
-    if (!_hasServices) {
-      return const SizedBox.shrink(); // Widget invisible que no ocupa espacio
-    }
+    // Eliminada la comprobación 'if (!_hasServices)' porque la cuadrícula (grid) siempre debe mostrarse.
 
     // Filtramos la lista completa de servicios basándonos en el texto de búsqueda actual
     final filteredServices = _availableServices.where((s) {
@@ -630,7 +628,8 @@ class ServicesViewState extends State<ServicesView> {
           CrossAxisAlignment.start, // Alineamos los elementos a la izquierda
       children: [
         Text(
-          localizations.servicesPerformed, // "Servicios realizados"
+          // Nota para el novato: Este texto muestra el título de la sección de servicios "Servicios Realizados"
+          localizations.servicesPerformed,
           style: TextStyle(
             fontSize: 20,
             fontWeight: FontWeight.bold,
@@ -765,8 +764,12 @@ class ServicesViewState extends State<ServicesView> {
   }
 
   Widget _buildSaveButton(AppLocalizations localizations) {
-    final bool canSave =
-        _mileageController.text.isNotEmpty && _selectedVehicle != null;
+    // Validamos visualmente si el botón debe estar habilitado (se puede apachar) o deshabilitado (gris).
+    // Nota para el novato: Ahora, el único requisito estricto visual para que se "encienda" el botón
+    // es haber seleccionado un vehículo (_selectedVehicle != null).
+    // Nota: Aún validaremos adentro del método _saveRecord si eligió al menos 1 servicio,
+    // para poder mostrarle el aviso en pantalla.
+    final bool canSave = _selectedVehicle != null;
 
     return SizedBox(
       width: double.infinity,
@@ -880,17 +883,29 @@ class ServicesViewState extends State<ServicesView> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              _buildVehicleSelection(vehicles),
+              // Nota para el novato: Aquí es donde construimos y armamos el rompecabezas de la pantalla.
+              // El orden en que ponemos los _build... dictará cómo se ven de arriba hacia abajo.
+              _buildVehicleSelection(
+                vehicles,
+              ), // 1. Carrusel para seleccionar vehículo
+              const SizedBox(height: 24), // Un espacio en blanco (separador)
+
+              _buildServicesGrid(
+                localizations,
+              ), // 2. Cuadrícula obligatoria de los servicios
               const SizedBox(height: 24),
-              _buildMileageInput(localizations),
+
+              _buildMileageInput(
+                localizations,
+              ), // 3. Campo de Kilometraje Actual (opcional y reubicado aquí)
               const SizedBox(height: 24),
-              _buildServicesSwitch(localizations),
-              const SizedBox(height: 16),
-              _buildServicesGrid(localizations),
+
+              _buildNotesInput(localizations), // 4. Campo amplio para las notas
               const SizedBox(height: 24),
-              _buildNotesInput(localizations),
-              const SizedBox(height: 24),
-              _buildSaveButton(localizations),
+
+              _buildSaveButton(
+                localizations,
+              ), // 5. Botón brillante para Guardar Registro
               const SizedBox(height: 24),
             ],
           ),
